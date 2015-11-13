@@ -4,6 +4,12 @@ List<int> pack(value) {
   return const Packer().pack(value);
 }
 
+class PackedReference {
+  final List<int> data;
+
+  PackedReference(this.data);
+}
+
 class Packer {
   const Packer();
 
@@ -19,6 +25,7 @@ class Packer {
     else if (value is double) return packDouble(value);
     else if (value is ByteData) return packBinary(value);
     else if (value is Message) return packMessage(value);
+    else if (value is PackedReference) return value.data;
     throw new Exception("Failed to pack value: ${value}");
   }
 
