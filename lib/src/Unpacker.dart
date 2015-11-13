@@ -140,9 +140,9 @@ class Unpacker {
     }
 
     var result = new ByteData(count);
-    for (var i = 0; i < count; i++) {
-      var idx = offset + i;
-      result.setUint8(i, data.getUint8(idx));
+    for (var i = offset; i < count; i++) {
+      result.setUint8(i - offset, data.getUint8(i));
+      i++;
     }
     offset += count;
     return result;

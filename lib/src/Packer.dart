@@ -34,7 +34,7 @@ class Packer {
   }
 
   List<int> packBinary(ByteData bytes) {
-    var count = bytes.elementSizeInBytes * bytes.lengthInBytes;
+    var count = bytes.lengthInBytes;
 
     if (count <= 255) {
       var out = new ByteData(count + 2);
@@ -50,7 +50,7 @@ class Packer {
       var out = new ByteData(count + 3);
       out.setUint8(0, 0xc5);
       out.setUint16(1, count);
-      var i = 2;
+      var i = 3;
       for (var b in bytes.buffer.asUint8List()) {
         out.setUint8(i, b);
         i++;
@@ -58,9 +58,9 @@ class Packer {
       return out.buffer.asUint8List();
     } else {
       var out = new ByteData(count + 5);
-      out.setUint8(0, 0xc5);
+      out.setUint8(0, 0xc6);
       out.setUint32(1, count);
-      var i = 2;
+      var i = 5;
       for (var b in bytes.buffer.asUint8List()) {
         out.setUint8(i, b);
         i++;
