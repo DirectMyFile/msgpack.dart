@@ -126,25 +126,32 @@ class Unpacker {
   ByteData unpackBinary(int type) {
     int count;
 
+    var byteOffset = 0;
+
     if (type == 0xc4) {
       count = data.getUint8(offset);
-      offset += 1;
+      byteOffset = 1;
     } else if (type == 0xc5) {
       count = data.getUint16(offset);
-      offset += 2;
+      byteOffset = 2;
     } else if (type == 0xc6) {
       count = data.getUint32(offset);
-      offset += 4;
+      byteOffset = 4;
     } else {
       throw new Exception("Bad Binary Type");
     }
 
-    var result = new ByteData(count);
-    for (var i = offset; i < count; i++) {
-      result.setUint8(i - offset, data.getUint8(i));
+    offset += byteOffset;
+
+    var result = new Uint8List(count);
+    var c = 0;
+    for (var i = offset; c < count; i++) {
+      result[c] = data.getUint8(i);
+      c++;
     }
     offset += count;
-    return result;
+
+    return result.buffer.asByteData();
   }
 
   double unpackFloat32() {

@@ -10,6 +10,31 @@ class PackedReference {
   PackedReference(this.data);
 }
 
+class BinaryHelper {
+  static ByteData create(input) {
+    if (input is ByteData) {
+      return input;
+    } else if (input is TypedData) {
+      return input.buffer.asByteData();
+    } else if (input is ByteBuffer) {
+      return input.asByteData();
+    } else if (input is List) {
+      return new Uint8List.fromList(input).buffer.asByteData();
+    } else if (input is String) {
+      var encoded = const Utf8Encoder().convert(input);
+      if (encoded is Uint8List) {
+        return encoded.buffer.asByteData();
+      } else {
+        return new Uint8List.fromList(encoded).buffer.asByteData();
+      }
+    } else if (input == null) {
+      return null;
+    }
+
+    throw new Exception("Unsupported input to convert to binary");
+  }
+}
+
 class Packer {
   const Packer();
 
@@ -48,8 +73,8 @@ class Packer {
       out.setUint8(0, 0xc4);
       out.setUint8(1, count);
       var i = 2;
-      for (var b in bytes.buffer.asUint8List()) {
-        out.setUint8(i, b);
+      for (var a = 0; a < count; a++) {
+        out.setUint8(i, bytes.getUint8(a));
         i++;
       }
       return out.buffer.asUint8List();
@@ -58,8 +83,8 @@ class Packer {
       out.setUint8(0, 0xc5);
       out.setUint16(1, count);
       var i = 3;
-      for (var b in bytes.buffer.asUint8List()) {
-        out.setUint8(i, b);
+      for (var a = 0; a < count; a++) {
+        out.setUint8(i, bytes.getUint8(a));
         i++;
       }
       return out.buffer.asUint8List();

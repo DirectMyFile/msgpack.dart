@@ -4,3 +4,4 @@ packages
 .idea/
 .pub
 .packages
+example/test.dart
