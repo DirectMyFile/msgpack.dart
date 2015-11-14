@@ -10,6 +10,12 @@ class PackedReference {
   PackedReference(this.data);
 }
 
+class Float {
+  final double value;
+
+  Float(this.value);
+}
+
 class BinaryHelper {
   static ByteData create(input) {
     if (input is ByteData) {
@@ -51,6 +57,7 @@ class Packer {
     else if (value is ByteData) return packBinary(value);
     else if (value is Message) return packMessage(value);
     else if (value is PackedReference) return value.data;
+    else if (value is Float) return packFloat(value.value);
     throw new Exception("Failed to pack value: ${value}");
   }
 
