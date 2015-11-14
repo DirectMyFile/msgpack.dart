@@ -68,8 +68,8 @@ class Packer {
       out.setUint8(0, 0xc6);
       out.setUint32(1, count);
       var i = 5;
-      for (var b in bytes.buffer.asUint8List()) {
-        out.setUint8(i, b);
+      for (var a = 0; a < count; a++) {
+        out.setUint8(i, bytes.getUint8(a));
         i++;
       }
       return out.buffer.asUint8List();
