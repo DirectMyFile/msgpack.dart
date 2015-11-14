@@ -1,10 +1,3 @@
-# MsgPack for Dart
-
-A full-featured MsgPack library for Dart.
-
-## Simple Example
-
-```dart
 import "dart:typed_data";
 
 import "package:msgpack/msgpack.dart";
@@ -31,4 +24,3 @@ main() {
 
   print(unpacked);
 }
-```

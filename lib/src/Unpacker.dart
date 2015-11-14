@@ -15,7 +15,9 @@ dynamic unpack(buffer) {
     _unpacker.reset(buffer);
   }
 
-  return _unpacker.unpack();
+  var value = _unpacker.unpack();
+  _unpacker.data = null;
+  return value;
 }
 
 Unpacker _unpacker;
