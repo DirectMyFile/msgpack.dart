@@ -109,7 +109,7 @@ class Packer {
   }
 
   List<int> packInt(int value) {
-    if (value < 128) {
+    if (value >= 0 && value < 128) {
       return [value];
     }
 
