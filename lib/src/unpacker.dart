@@ -186,9 +186,10 @@ class Unpacker {
   }
 
   int unpackU16() {
-    int value = data.getUint16(offset);
-    offset += 2;
-    return value;
+    var o = unpackU8();
+    o = o << 8;
+    o |= unpackU8();
+    return o;
   }
 
   int unpackU8() {

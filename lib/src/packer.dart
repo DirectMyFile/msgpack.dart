@@ -142,29 +142,22 @@ class Packer {
   }
 
   List<int> _encodeUint16(int value) {
-    return [(value >> 8) & 0xff, value & 0xff];
+    return [
+      (value >> 8) & 0x00FF,
+      value & 0x00FF
+    ];
   }
 
   List<int> _encodeUint32(int value) {
-    return [
-      (value >> 24) & 0xff,
-      (value >> 16) & 0xff,
-      (value >> 8) & 0xff,
-      value & 0xff
-    ];
+    var data = new ByteData(4);
+    data.setUint32(0, value);
+    return data.buffer.asUint8List();
   }
 
   List<int> _encodeUint64(int value) {
-    return [
-      (value >> 56) & 0xff,
-      (value >> 48) & 0xff,
-      (value >> 40) & 0xff,
-      (value >> 32) & 0xff,
-      (value >> 24) & 0xff,
-      (value >> 16) & 0xff,
-      (value >> 8) & 0xff,
-      value & 0xff
-    ];
+    var data = new ByteData(8);
+    data.setUint64(0, value);
+    return data.buffer.asUint8List();
   }
 
   static const Utf8Encoder _utf8Encoder = const Utf8Encoder();
