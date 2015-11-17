@@ -73,7 +73,7 @@ class Packer {
   }
 
   List<int> packBinary(ByteData bytes) {
-    var count = bytes.lengthInBytes;
+    var count = bytes.elementSizeInBytes * bytes.lengthInBytes;
 
     if (count <= 255) {
       var out = new ByteData(count + 2);
@@ -172,9 +172,9 @@ class Packer {
   List<int> packString(String value) {
     List<int> encoded = [];
     List<int> utf8 = _utf8Encoder.convert(value);
-    if (utf8.length < 0x20) encoded.add(0xa0 + utf8.length);
-    else if (utf8.length < 0x100) encoded.addAll([0xd9, utf8.length]);
-    else if (utf8.length < 0x10000) encoded
+    if (utf8.length < 32) encoded.add(0xa0 | utf8.length);
+    else if (utf8.length < 256) encoded.addAll([0xd9, utf8.length]);
+    else if (utf8.length < 65536) encoded
       ..add(0xda)
       ..addAll(_encodeUint16(utf8.length));
     else encoded
@@ -192,10 +192,9 @@ class Packer {
   }
 
   List<int> packDouble(double value) {
-    var f = new ByteData(9);
-    f.setUint8(0, 0xcb);
-    f.setFloat64(1, value);
-    return f.buffer.asUint8List();
+    var f = new ByteData(8);
+    f.setFloat64(0, value);
+    return [0xcb]..addAll(f.buffer.asUint8List());
   }
 
   List<int> packList(List value) {

@@ -163,9 +163,9 @@ class Unpacker {
   }
 
   double unpackDouble() {
-    var value = data.getFloat64(offset);
+    var buff = new Uint8List.fromList(data.buffer.asUint8List(offset, 8));
     offset += 8;
-    return value;
+    return buff.buffer.asByteData().getFloat64(0);
   }
 
   unpackMessage(factory(List fields)) {

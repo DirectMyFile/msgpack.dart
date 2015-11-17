@@ -10,7 +10,7 @@ main() {
   var data = {
     "String": "Hello World",
     "Integer": 42,
-    "Double": 45.29,
+    "Double": 45.2948,
     "Integer List": [1, 2, 3],
     "Binary": binary,
     "Map": {
