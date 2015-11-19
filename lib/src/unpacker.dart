@@ -174,15 +174,19 @@ class Unpacker {
   }
 
   int unpackU64() {
-    int value = data.getUint64(offset);
-    offset += 8;
-    return value;
+    var num = 0;
+    for (var i = 0; i < 8; i++) {
+      num = (num << 8) | unpackU8();
+    }
+    return num;
   }
 
   int unpackU32() {
-    int value = data.getUint32(offset);
-    offset += 4;
-    return value;
+    var num = 0;
+    for (var i = 0; i < 4; i++) {
+      num = (num << 8) | unpackU8();
+    }
+    return num;
   }
 
   int unpackU16() {
@@ -197,25 +201,106 @@ class Unpacker {
   }
 
   int unpackS64() {
-    int value = data.getInt64(offset);
-    offset += 8;
-    return value;
+    var bytes = [
+      unpackU8(),
+      unpackU8(),
+      unpackU8(),
+      unpackU8(),
+      unpackU8(),
+      unpackU8(),
+      unpackU8(),
+      unpackU8()
+    ];
+    var negate = (bytes[0] & 0x80) != 0;
+    var x = 0;
+    var o = 0;
+    var carry = 1;
+    for (var i = 7, m = 1; i >= 0; i--, m *= 256) {
+      var v = bytes[o + i];
+
+      if (negate) {
+        v = (v ^ 0xff) + carry;
+        carry = v >> 8;
+        v &= 0xff;
+      }
+
+      x += v * m;
+    }
+
+    return negate ? -x : x;
   }
 
   int unpackS32() {
-    int value = data.getInt32(offset);
-    offset += 4;
-    return value;
+    var bytes = [
+      unpackU8(),
+      unpackU8(),
+      unpackU8(),
+      unpackU8()
+    ];
+    var negate = (bytes[0] & 0x40) != 0;
+    var x = 0;
+    var o = 0;
+    var carry = 1;
+    for (var i = 3, m = 1; i >= 0; i--, m *= 256) {
+      var v = bytes[o + i];
+
+      if (negate) {
+        v = (v ^ 0xff) + carry;
+        carry = v >> 8;
+        v &= 0xff;
+      }
+
+      x += v * m;
+    }
+
+    return negate ? -x : x;
   }
 
   int unpackS16() {
-    int value = data.getInt16(offset);
-    offset += 2;
-    return value;
+    var bytes = [
+      unpackU8(),
+      unpackU8()
+    ];
+    var negate = (bytes[0] & 0x20) != 0;
+    var x = 0;
+    var o = 0;
+    var carry = 1;
+    for (var i = 1, m = 1; i >= 0; i--, m *= 256) {
+      var v = bytes[o + i];
+
+      if (negate) {
+        v = (v ^ 0xff) + carry;
+        carry = v >> 8;
+        v &= 0xff;
+      }
+
+      x += v * m;
+    }
+
+    return negate ? -x : x;
   }
 
   int unpackS8() {
-    return data.getInt8(offset++);
+    var bytes = [
+      unpackU8()
+    ];
+    var negate = (bytes[0] & 0x10) != 0;
+    var x = 0;
+    var o = 0;
+    var carry = 1;
+    for (var i = 0, m = 1; i >= 0; i--, m *= 256) {
+      var v = bytes[o + i];
+
+      if (negate) {
+        v = (v ^ 0xff) + carry;
+        carry = v >> 8;
+        v &= 0xff;
+      }
+
+      x += v * m;
+    }
+
+    return negate ? -x : x;
   }
 
   String unpackString(int counter()) {

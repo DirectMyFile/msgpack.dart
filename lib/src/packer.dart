@@ -14,6 +14,9 @@ class Float {
   final double value;
 
   Float(this.value);
+
+  @override
+  String toString() => value.toString();
 }
 
 class BinaryHelper {
@@ -115,7 +118,9 @@ class Packer {
 
     List<int> encoded = [];
     if (value < 0) {
-      if (value >= -32) encoded.add(0xe0 + value + 32);
+      if (value >= -32) {
+        encoded.add(0xe0 + value + 32);
+      }
       else if (value > -0x80) encoded.addAll([0xd0, value + 0x100]);
       else if (value > -0x8000) encoded
         ..add(0xd1)
@@ -143,21 +148,31 @@ class Packer {
 
   List<int> _encodeUint16(int value) {
     return [
-      (value >> 8) & 0x00FF,
-      value & 0x00FF
+      (value >> 8) & 0x00ff,
+      value & 0x00ff
     ];
   }
 
   List<int> _encodeUint32(int value) {
-    var data = new ByteData(4);
-    data.setUint32(0, value);
-    return data.buffer.asUint8List();
+    return [
+      (value & 0xff000000) >> 24,
+      (value & 0x00ff0000) >> 16,
+      (value & 0x0000ff00) >> 8,
+      value & 0x000000ff
+    ];
   }
 
   List<int> _encodeUint64(int value) {
-    var data = new ByteData(8);
-    data.setUint64(0, value);
-    return data.buffer.asUint8List();
+    return [
+      (value >> 56) & 0xff,
+      (value >> 48) & 0xff,
+      (value >> 40) & 0xff,
+      (value >> 32) & 0xff,
+      (value >> 24) & 0xff,
+      (value >> 16) & 0xff,
+      (value >> 8) & 0xff,
+      value & 0xff
+    ];
   }
 
   static const Utf8Encoder _utf8Encoder = const Utf8Encoder();
@@ -178,10 +193,9 @@ class Packer {
   }
 
   List<int> packFloat(double value) {
-    var f = new ByteData(5);
-    f.setUint8(0, 0xca);
-    f.setFloat32(1, value);
-    return f.buffer.asUint8List();
+    var f = new ByteData(4);
+    f.setFloat32(0, value);
+    return [0xca]..addAll(f.buffer.asUint8List());
   }
 
   List<int> packDouble(double value) {
