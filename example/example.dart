@@ -1,4 +1,3 @@
-import "dart:convert";
 import "package:msgpack/msgpack.dart";
 
 main() {
@@ -13,7 +12,8 @@ main() {
     -500,
     -482858587484,
     -64000,
-    new Float(5.38)
+    new Float(5.38),
+    {}
   ];
 
   List<int> packed = pack(data);

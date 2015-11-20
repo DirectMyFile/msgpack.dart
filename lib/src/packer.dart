@@ -1,7 +1,13 @@
 part of msgpack;
 
-List<int> pack(value) {
-  return const Packer().pack(value);
+List<int> pack(value, {bool stateful: false}) {
+  if (stateful) {
+    var packer = new StatefulPacker();
+    packer.pack(value);
+    return packer.bytes.buffer.asUint8List();
+  } else {
+    return const Packer().pack(value);
+  }
 }
 
 class PackedReference {
@@ -147,32 +153,32 @@ class Packer {
   }
 
   List<int> _encodeUint16(int value) {
-    return [
-      (value >> 8) & 0x00ff,
-      value & 0x00ff
-    ];
+    var bytes = new Uint8List(2);
+    bytes[0] = (value >> 8) & 0xff;
+    bytes[1] = value & 0xff;
+    return bytes;
   }
 
   List<int> _encodeUint32(int value) {
-    return [
-      (value & 0xff000000) >> 24,
-      (value & 0x00ff0000) >> 16,
-      (value & 0x0000ff00) >> 8,
-      value & 0x000000ff
-    ];
+    var bytes = new Uint8List(4);
+    bytes[0] = (value >> 24) & 0xff;
+    bytes[1] = (value >> 16) & 0xff;
+    bytes[2] = (value >> 8) & 0xff;
+    bytes[3] = value & 0xff;
+    return bytes;
   }
 
   List<int> _encodeUint64(int value) {
-    return [
-      (value >> 56) & 0xff,
-      (value >> 48) & 0xff,
-      (value >> 40) & 0xff,
-      (value >> 32) & 0xff,
-      (value >> 24) & 0xff,
-      (value >> 16) & 0xff,
-      (value >> 8) & 0xff,
-      value & 0xff
-    ];
+    var bytes = new Uint8List(8);
+    bytes[0] = (value >> 56) & 0xff;
+    bytes[1] = (value >> 48) & 0xff;
+    bytes[2] = (value >> 40) & 0xff;
+    bytes[3] = (value >> 32) & 0xff;
+    bytes[4] = (value >> 24) & 0xff;
+    bytes[5] = (value >> 16) & 0xff;
+    bytes[6] = (value >> 8) & 0xff;
+    bytes[7] = value & 0xff;
+    return bytes;
   }
 
   static const Utf8Encoder _utf8Encoder = const Utf8Encoder();
