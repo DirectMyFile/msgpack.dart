@@ -16,9 +16,9 @@ main() {
     {}
   ];
 
-  List<int> packed = pack(data, stateful: true);
-  Map unpacked = unpack(packed);
+  var a = pack(data);
+  var b = pack(data, stateful: false);
 
-  print("Original: ${data}");
-  print("Unpacked: ${unpacked}");
+  print(a);
+  print(b);
 }

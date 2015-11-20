@@ -4,7 +4,7 @@ List<int> pack(value, {bool stateful: false}) {
   if (stateful) {
     var packer = new StatefulPacker();
     packer.pack(value);
-    return packer.bytes.buffer.asUint8List();
+    return packer.done();
   } else {
     return const Packer().pack(value);
   }
