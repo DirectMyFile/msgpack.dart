@@ -170,14 +170,14 @@ class Packer {
   }
 
   List<int> _encodeUint16(int value, [Uint8List bytes, int offset = 0]) {
-    if (bytes == null) new Uint8List(2);
+    if (bytes == null) bytes = new Uint8List(2);
     bytes[offset] = (value >> 8) & 0xff;
     bytes[offset + 1] = value & 0xff;
     return bytes;
   }
 
   Uint8List _encodeUint32(int value, [Uint8List bytes, int offset = 0]) {
-    if (bytes == null) new Uint8List(4);
+    if (bytes == null) bytes = new Uint8List(4);
     bytes[offset] = (value >> 24) & 0xff;
     bytes[offset + 1] = (value >> 16) & 0xff;
     bytes[offset + 2] = (value >> 8) & 0xff;
@@ -186,7 +186,7 @@ class Packer {
   }
 
   List<int> _encodeUint64(int value, [Uint8List bytes, int offset = 0]) {
-    if (bytes == null) new Uint8List(8);
+    if (bytes == null) bytes = new Uint8List(8);
     bytes[offset] = (value >> 56) & 0xff;
     bytes[offset + 1] = (value >> 48) & 0xff;
     bytes[offset + 2] = (value >> 40) & 0xff;
