@@ -1,21 +1,44 @@
 import "package:msgpack/msgpack.dart";
 
-import "dart:io";
-
 main() {
-  var data = {
-    "rid": 0,
-    "updates": [
-      [
-        0,
-        15,
-        "2014-11-27T09:11.000-08:00"
-      ]
-    ]
-  };
+  var data = [
+    53.43750000000001,
+    5883939484804398999,
+    "unpacked",
+    5993939,
+    5.48384888,
+    5.5,
+    -45,
+    -500,
+    -482858587484,
+    -64000,
+    new Float(5.38),
+    {}
+  ];
 
+  StringCache.store("rid");
+  StringCache.store("responses");
+  StringCache.store("requests");
+  StringCache.store("updates");
+
+  var i = 0;
+  var watch = new Stopwatch();
+  var counts = [];
   while (true) {
-    pack(data);
-    sleep(const Duration(milliseconds: 1));
+    watch.start();
+    var out = pack(data, stateful: true);
+    print(unpack(out));
+    watch.stop();
+    counts.add(watch.elapsedMicroseconds);
+    watch.reset();
+
+    i++;
+
+    if (i == 5) {
+      break;
+    }
   }
+
+  var avg = counts.reduce((a, b) => a + b) / counts.length;
+  print("Average Time: ${avg} microseconds");
 }

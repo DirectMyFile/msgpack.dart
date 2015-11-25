@@ -124,7 +124,14 @@ class StatefulPacker {
   static const Utf8Encoder _utf8Encoder = const Utf8Encoder();
 
   void packString(String value) {
-    List<int> utf8 = _utf8Encoder.convert(value);
+    List<int> utf8;
+
+    if (StringCache.has(value)) {
+      utf8 = StringCache.get(value);
+    } else {
+      utf8 = _utf8Encoder.convert(value);
+    }
+
     if (utf8.length < 0x20) {
       write(0xa0 + utf8.length);
     } else if (utf8.length < 0x100) {
@@ -141,17 +148,17 @@ class StatefulPacker {
   }
 
   void packDouble(double value) {
-    var f = new ByteData(9);
-    f.setUint8(0, 0xcb);
-    f.setFloat64(1, value);
-    writeAll(f.buffer.asUint8List());
+    write(0xcb);
+    var f = new ByteData(8);
+    f.setFloat64(0, value);
+    writeAll(f);
   }
 
   void packFloat(Float float) {
     write(0xca);
     var f = new ByteData(4);
     f.setFloat32(0, float.value);
-    writeAll(f.buffer.asUint8List());
+    writeAll(f);
   }
 
   void packList(List value) {
@@ -187,9 +194,17 @@ class StatefulPacker {
     }
   }
 
-  void writeAll(Uint8List list) {
-    for (var b in list) {
-      write(b);
+  void writeAll(list) {
+    if (list is ByteData) {
+      for (var i = 0; i < list.lengthInBytes; i++) {
+        write(list.getUint8(i));
+      }
+    } else if (list is List) {
+      for (var b in list) {
+        write(b);
+      }
+    } else {
+      throw new Exception("I don't know how to write everything in ${list}");
     }
   }
 

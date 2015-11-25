@@ -1,6 +1,6 @@
 part of msgpack;
 
-List<int> pack(value, {bool stateful: false}) {
+List<int> pack(value, {bool stateful: true}) {
   if (stateful) {
     var packer = new StatefulPacker();
     packer.pack(value);
@@ -60,7 +60,7 @@ class Packer {
     else if (value is int) return packInt(value);
     else if (value is String) return packString(value);
     else if (value is List) return packList(value);
-    else if (value is Iterable) return packList(value is List ? value : value.toList());
+    else if (value is Iterable) return packList(value.toList());
     else if (value is Map) return packMap(value);
     else if (value is double) return packDouble(value);
     else if (value is ByteData) return packBinary(value);
@@ -244,13 +244,17 @@ class Packer {
 
   List<int> packMap(Map value) {
     var encoded = <int>[];
-    if (value.length < 16) encoded.add(0x80 + value.length);
-    else if (value.length < 0x100) encoded
-      ..add(0xde)
-      ..addAll(_encodeUint16(value.length));
-    else encoded
-        ..add(0xdf)
-        ..addAll(_encodeUint32(value.length));
+
+    if (value.length < 16) {
+      encoded.add(0x80 + value.length);
+    } else if (value.length < 0x100) {
+      encoded.add(0xde);
+      encoded.addAll(_encodeUint16(value.length));
+    } else {
+      encoded.add(0xdf);
+      encoded.addAll(_encodeUint32(value.length));
+    }
+
     for (var element in value.keys) {
       encoded.addAll(pack(element));
       encoded.addAll(pack(value[element]));
