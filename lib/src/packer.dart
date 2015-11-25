@@ -60,7 +60,7 @@ class Packer {
     else if (value is int) return packInt(value);
     else if (value is String) return packString(value);
     else if (value is List) return packList(value);
-    else if (value is Iterable) return packList(value.toList());
+    else if (value is Iterable) return packList(value is List ? value : value.toList());
     else if (value is Map) return packMap(value);
     else if (value is double) return packDouble(value);
     else if (value is ByteData) return packBinary(value);
@@ -119,65 +119,82 @@ class Packer {
 
   List<int> packInt(int value) {
     if (value >= 0 && value < 128) {
-      return [value];
+      var list = new Uint8List(1);
+      list[0] = value;
+      return list;
     }
 
-    List<int> encoded = [];
+    Uint8List list;
+
     if (value < 0) {
       if (value >= -32) {
-        encoded.add(0xe0 + value + 32);
+        list = new Uint8List(1);
+        list[0] = 0xe0 + value + 32;
+      } else if (value > -0x80) {
+        list = new Uint8List(2);
+        list[0] = 0xd0;
+        list[1] = value + 0x100;
+      } else if (value > -0x8000) {
+        list = new Uint8List(3);
+        _encodeUint16(value + 0x10000, list, 1);
+      } else if (value > -0x80000000) {
+        list = new Uint8List(5);
+        list[0] = 0xd2;
+        _encodeUint32(value + 0x100000000, list, 1);
+      } else {
+        list = new Uint8List(9);
+        list[0] = 0xd3;
+        _encodeUint64(value, list, 1);
       }
-      else if (value > -0x80) encoded.addAll([0xd0, value + 0x100]);
-      else if (value > -0x8000) encoded
-        ..add(0xd1)
-        ..addAll(_encodeUint16(value + 0x10000));
-      else if (value > -0x80000000) encoded
-        ..add(0xd2)
-        ..addAll(_encodeUint32(value + 0x100000000));
-      else encoded
-          ..add(0xd3)
-          ..addAll(_encodeUint64(value));
     } else {
-      if (value < 0x100) encoded.addAll([0xcc, value]);
-      else if (value < 0x10000) encoded
-        ..add(0xcd)
-        ..addAll(_encodeUint16(value));
-      else if (value < 0x100000000) encoded
-        ..add(0xce)
-        ..addAll(_encodeUint32(value));
-      else encoded
-          ..add(0xcf)
-          ..addAll(_encodeUint64(value));
+      if (value < 0x100) {
+        list = new Uint8List(2);
+        list[0] = 0xcc;
+        list[1] = value;
+      } else if (value < 0x10000) {
+        list = new Uint8List(3);
+        list[0] = 0xcd;
+        _encodeUint16(value, list, 1);
+      } else if (value < 0x100000000) {
+        list = new Uint8List(5);
+        list[0] = 0xce;
+        _encodeUint32(value, list, 1);
+      } else {
+        list = new Uint8List(9);
+        list[0] = 0xcf;
+        _encodeUint64(value, list, 1);
+      }
     }
-    return encoded;
+
+    return list;
   }
 
-  List<int> _encodeUint16(int value) {
-    var bytes = new Uint8List(2);
-    bytes[0] = (value >> 8) & 0xff;
-    bytes[1] = value & 0xff;
+  List<int> _encodeUint16(int value, [Uint8List bytes, int offset = 0]) {
+    if (bytes == null) new Uint8List(2);
+    bytes[offset] = (value >> 8) & 0xff;
+    bytes[offset + 1] = value & 0xff;
     return bytes;
   }
 
-  List<int> _encodeUint32(int value) {
-    var bytes = new Uint8List(4);
-    bytes[0] = (value >> 24) & 0xff;
-    bytes[1] = (value >> 16) & 0xff;
-    bytes[2] = (value >> 8) & 0xff;
-    bytes[3] = value & 0xff;
+  Uint8List _encodeUint32(int value, [Uint8List bytes, int offset = 0]) {
+    if (bytes == null) new Uint8List(4);
+    bytes[offset] = (value >> 24) & 0xff;
+    bytes[offset + 1] = (value >> 16) & 0xff;
+    bytes[offset + 2] = (value >> 8) & 0xff;
+    bytes[offset + 3] = value & 0xff;
     return bytes;
   }
 
-  List<int> _encodeUint64(int value) {
-    var bytes = new Uint8List(8);
-    bytes[0] = (value >> 56) & 0xff;
-    bytes[1] = (value >> 48) & 0xff;
-    bytes[2] = (value >> 40) & 0xff;
-    bytes[3] = (value >> 32) & 0xff;
-    bytes[4] = (value >> 24) & 0xff;
-    bytes[5] = (value >> 16) & 0xff;
-    bytes[6] = (value >> 8) & 0xff;
-    bytes[7] = value & 0xff;
+  List<int> _encodeUint64(int value, [Uint8List bytes, int offset = 0]) {
+    if (bytes == null) new Uint8List(8);
+    bytes[offset] = (value >> 56) & 0xff;
+    bytes[offset + 1] = (value >> 48) & 0xff;
+    bytes[offset + 2] = (value >> 40) & 0xff;
+    bytes[offset + 3] = (value >> 32) & 0xff;
+    bytes[offset + 4] = (value >> 24) & 0xff;
+    bytes[offset + 5] = (value >> 16) & 0xff;
+    bytes[offset+ 6] = (value >> 8) & 0xff;
+    bytes[offset + 7] = value & 0xff;
     return bytes;
   }
 
@@ -226,7 +243,7 @@ class Packer {
   }
 
   List<int> packMap(Map value) {
-    List<int> encoded = [];
+    var encoded = <int>[];
     if (value.length < 16) encoded.add(0x80 + value.length);
     else if (value.length < 0x100) encoded
       ..add(0xde)
