@@ -16,6 +16,6 @@ main() {
 
   while (true) {
     pack(data);
-    //sleep(const Duration(milliseconds: 1));
+    sleep(const Duration(milliseconds: 1));
   }
 }
