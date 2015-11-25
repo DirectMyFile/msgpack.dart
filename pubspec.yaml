@@ -6,4 +6,4 @@ authors:
 - Dan Ellis <dan@danellis.me>
 homepage: https://github.com/DirectMyFile/msgpack.dart
 dev_dependencies:
-  unittest: any
+  test: any

@@ -99,26 +99,32 @@ class StatefulPacker {
   }
 
   void _encodeUint16(int value) {
-    write((value >> 8) & 0xff);
-    write(value & 0xff);
+    writeAll([
+      (value >> 8) & 0xff,
+      value & 0xff
+    ]);
   }
 
   void _encodeUint32(int value) {
-    write((value >> 24) & 0xff);
-    write((value >> 16) & 0xff);
-    write((value >> 8) & 0xff);
-    write(value & 0xff);
+    writeAll([
+      (value >> 24) & 0xff,
+      (value >> 16) & 0xff,
+      (value >> 16) & 0xff,
+      value & 0xff
+    ]);
   }
 
   void _encodeUint64(int value) {
-    write((value >> 56) & 0xff);
-    write((value >> 48) & 0xff);
-    write((value >> 40) & 0xff);
-    write((value >> 32) & 0xff);
-    write((value >> 24) & 0xff);
-    write((value >> 16) & 0xff);
-    write((value >> 8) & 0xff);
-    write(value & 0xff);
+    writeAll([
+      (value >> 56) & 0xff,
+      (value >> 48) & 0xff,
+      (value >> 40) & 0xff,
+      (value >> 32) & 0xff,
+      (value >> 24) & 0xff,
+      (value >> 16) & 0xff,
+      (value >> 8) & 0xff,
+      value & 0xff
+    ]);
   }
 
   static const Utf8Encoder _utf8Encoder = const Utf8Encoder();
@@ -141,9 +147,9 @@ class StatefulPacker {
   }
 
   void packDouble(double value) {
-    var f = new ByteData(9);
-    f.setUint8(0, 0xcb);
-    f.setFloat64(1, value);
+    write(0xcb);
+    var f = new ByteData(8);
+    f.setFloat64(0, value);
     writeAll(f.buffer.asUint8List());
   }
 
@@ -188,8 +194,13 @@ class StatefulPacker {
   }
 
   void writeAll(Uint8List list) {
-    for (var b in list) {
-      write(b);
+    if (_MsgPack.STATEFUL_WRITE_ALL_RECURSE) {
+      for (var b in list) {
+        write(b);
+      }
+    } else {
+      lists.add(list);
+      len += list.length;
     }
   }
 
@@ -198,7 +209,7 @@ class StatefulPacker {
       if (list != null) {
         lists.add(new Uint8List.view(list.buffer, 0, pos));
       }
-      list = new Uint8List(128);
+      list = new Uint8List(1024);
       pos = 0;
     }
 
