@@ -1,6 +1,6 @@
 part of msgpack;
 
-List<int> pack(value, {bool stateful: true}) {
+List<int> pack(value, {bool stateful: false}) {
   if (stateful) {
     var packer = new StatefulPacker();
     packer.pack(value);
