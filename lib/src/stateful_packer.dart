@@ -209,11 +209,15 @@ class StatefulPacker {
   }
 
   void write(int b) {
+    if (lists == null) {
+      lists = [];
+    }
+
     if (list == null || pos >= list.length) {
       if (list != null) {
         lists.add(new Uint8List.view(list.buffer, 0, pos));
       }
-      list = new Uint8List(128);
+      list = new Uint8List(64);
       pos = 0;
     }
 
@@ -236,6 +240,8 @@ class StatefulPacker {
         i++;
       }
     }
+    list = null;
+    lists = null;
     return out;
   }
 
