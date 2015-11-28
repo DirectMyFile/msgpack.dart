@@ -162,14 +162,15 @@ class StatefulPacker {
   }
 
   void packList(List value) {
-    if (value.length < 16) {
-      write(0x90 + value.length);
-    } else if (value.length < 0x100) {
+    var len = value.length;
+    if (len < 16) {
+      write(0x90 + len);
+    } else if (len < 0x100) {
       write(0xdc);
-      _encodeUint16(value.length);
+      _encodeUint16(len);
     } else {
       write(0xdd);
-      _encodeUint32(value.length);
+      _encodeUint32(len);
     }
 
     for (var element in value) {
