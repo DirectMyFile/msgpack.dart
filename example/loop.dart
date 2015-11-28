@@ -27,7 +27,6 @@ main() {
   while (true) {
     watch.start();
     var out = pack(data, stateful: true);
-    print(unpack(out));
     watch.stop();
     counts.add(watch.elapsedMicroseconds);
     watch.reset();

@@ -248,5 +248,5 @@ class StatefulPacker {
   int pos = 0;
   int len = 0;
   Uint8List list;
-  List<Uint8List> lists = [];
+  List<Uint8List> lists;
 }

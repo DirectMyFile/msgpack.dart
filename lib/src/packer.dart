@@ -2,13 +2,17 @@ part of msgpack;
 
 List<int> pack(value, {bool stateful: true}) {
   if (stateful) {
-    var packer = new StatefulPacker();
-    packer.pack(value);
-    return packer.done();
+    if (_statefulPacker == null) {
+      _statefulPacker = new StatefulPacker();
+    }
+    _statefulPacker.pack(value);
+    return _statefulPacker.done();
   } else {
     return const Packer().pack(value);
   }
 }
+
+StatefulPacker _statefulPacker;
 
 class PackedReference {
   final List<int> data;
