@@ -322,8 +322,9 @@ class Unpacker {
   List unpackList(int counter()) {
     var count = counter();
     List list = [];
+    list.length = count;
     for (int i = 0; i < count; ++i) {
-      list.add(unpack());
+      list[i] = unpack();
     }
     return list;
   }
