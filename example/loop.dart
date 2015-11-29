@@ -21,12 +21,16 @@ main() async {
   while (true) {
     watch.start();
     var out = pack(data, stateful: true);
+    unpack(out);
     watch.stop();
     counts.add(watch.elapsedMicroseconds);
     watch.reset();
 
     i++;
-    await new Future.delayed(const Duration(milliseconds: 5));
+
+    if (i == 5000) {
+      break;
+    }
   }
 
   var avg = counts.reduce((a, b) => a + b) / counts.length;
