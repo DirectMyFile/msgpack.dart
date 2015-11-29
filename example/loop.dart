@@ -1,7 +1,5 @@
 import "package:msgpack/msgpack.dart";
 
-import "dart:async";
-
 main() async {
   var data = {
     "responses": [
