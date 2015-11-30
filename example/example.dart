@@ -1,22 +1,20 @@
 import "package:msgpack/msgpack.dart";
 
 main() {
-  var data = [
-    53.43750000000001,
-    5883939484804398999,
-    "unpacked",
-    5993939,
-    5.48384888,
-    5.5,
-    -45,
-    -500,
-    -482858587484,
-    -64000,
-    new Float(5.38),
-    {}
-  ];
+  var data = {
+    "responses": [
+      {
+        "rid": 0,
+        "updates": [
+          [6, 21901.11328125, "2015-11-28T13:19:13.164-05:00"],
+          [8, 31.844969287790363, "2015-11-28T13:19:13.164-05:00"]
+        ]
+      }
+    ],
+    "msg": 99
+  };
 
-  List<int> packed = pack(data, stateful: true);
+  List<int> packed = pack(data);
   Map unpacked = unpack(packed);
 
   print("Original: ${data}");

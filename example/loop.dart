@@ -1,6 +1,12 @@
 import "package:msgpack/msgpack.dart";
 
-main() async {
+main(List<String> args) async {
+  var count = 5000;
+
+  if (args.length == 1) {
+    count = int.parse(args[0]);
+  }
+
   var data = {
     "responses": [
       {
@@ -18,15 +24,15 @@ main() async {
   var counts = [];
   while (true) {
     watch.start();
-    var out = pack(data, stateful: true);
-    unpack(out);
+    var packed = pack(data, stateful: true);
+    var unpacked = unpack(packed);
     watch.stop();
     counts.add(watch.elapsedMicroseconds);
     watch.reset();
 
     i++;
 
-    if (i == 5000) {
+    if (i == count) {
       break;
     }
   }

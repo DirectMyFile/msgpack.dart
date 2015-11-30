@@ -45,11 +45,11 @@ class Unpacker {
   int offset;
 
   Unpacker(ByteBuffer buffer, [this.offset = 0]) {
-    data = new ByteData.view(buffer);
+    data = buffer.asByteData();
   }
 
   void reset(ByteBuffer buff) {
-    data = new ByteData.view(buff);
+    data = buff.asByteData();
     offset = 0;
   }
 
@@ -59,9 +59,9 @@ class Unpacker {
     if (type >= 0xe0) return type - 0x100;
     if (type < 0xc0) {
       if (type < 0x80) return type;
-      else if (type < 0x90) return unpackMap(() => type - 0x80);
-      else if (type < 0xa0) return unpackList(() => type - 0x90);
-      else return unpackString(() => type - 0xa0);
+      else if (type < 0x90) return unpackMap(type - 0x80);
+      else if (type < 0xa0) return unpackList(type - 0x90);
+      else return unpackString(type - 0xa0);
     }
 
     switch (type) {
@@ -98,25 +98,25 @@ class Unpacker {
         return unpackS8();
 
       case 0xd9:
-        return unpackString(unpackU8);
+        return unpackString(unpackU8());
       case 0xda:
-        return unpackString(unpackU16);
+        return unpackString(unpackU16());
       case 0xdb:
-        return unpackString(unpackU32);
+        return unpackString(unpackU32());
 
       case 0xdf:
-        return unpackMap(unpackU32);
+        return unpackMap(unpackU32());
       case 0xde:
-        return unpackMap(unpackU16);
+        return unpackMap(unpackU16());
       case 0x80:
-        return unpackMap(unpackU8);
+        return unpackMap(unpackU8());
 
       case 0xdd:
-        return unpackList(unpackU32);
+        return unpackList(unpackU32());
       case 0xdc:
-        return unpackList(unpackU16);
+        return unpackList(unpackU16());
       case 0x90:
-        return unpackList(unpackU8);
+        return unpackList(unpackU8());
 
       case 0xca:
         return unpackFloat32();
@@ -303,15 +303,13 @@ class Unpacker {
     return negate ? -x : x;
   }
 
-  String unpackString(int counter()) {
-    var count = counter();
+  String unpackString(int count) {
     String value = const Utf8Decoder().convert(new Uint8List.view(data.buffer, offset, count));
     offset += count;
     return value;
   }
 
-  Map unpackMap(int counter()) {
-    var count = counter();
+  Map unpackMap(int count) {
     Map map = {};
     for (int i = 0; i < count; ++i) {
       map[unpack()] = unpack();
@@ -319,8 +317,7 @@ class Unpacker {
     return map;
   }
 
-  List unpackList(int counter()) {
-    var count = counter();
+  List unpackList(int count) {
     List list = [];
     list.length = count;
     for (int i = 0; i < count; ++i) {
