@@ -37,7 +37,9 @@ unpackMessage(buffer, factory(List fields)) {
     _unpacker.reset(buffer);
   }
 
-  return _unpacker.unpackMessage(factory);
+  var value = _unpacker.unpackMessage(factory);
+  _unpacker.data = null;
+  return value;
 }
 
 class Unpacker {
