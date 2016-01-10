@@ -129,7 +129,7 @@ class StatefulPacker {
     if (StringCache.has(value)) {
       utf8 = StringCache.get(value);
     } else {
-      utf8 = _utf8Encoder.convert(value);
+      utf8 = _toUTF8(value);
     }
 
     if (utf8.length < 0x20) {

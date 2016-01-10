@@ -17,7 +17,7 @@ class StringCache {
   }
 
   static void store(String string) {
-    _cache[string] = const Utf8Encoder().convert(string);
+    _cache[string] = toUTF8(string);
   }
 
   static List<int> get(String string) {
@@ -27,4 +27,17 @@ class StringCache {
   static void clear() {
     _cache.clear();
   }
+}
+
+Uint8List _toUTF8(String str) {
+  int length = str.length;
+  Uint8List bytes = new Uint8List(length);
+  for (int i = 0; i < length; i++) {
+    int unit = str.codeUnitAt(i);
+    if (unit >= 128) {
+      return new Uint8List.fromList(const Utf8Encoder().convert(str));
+    }
+    bytes[i] = unit;
+  }
+  return bytes;
 }

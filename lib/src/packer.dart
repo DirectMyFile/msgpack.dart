@@ -40,7 +40,7 @@ class BinaryHelper {
     } else if (input is List) {
       return new Uint8List.fromList(input).buffer.asByteData();
     } else if (input is String) {
-      var encoded = const Utf8Encoder().convert(input);
+      var encoded = _toUTF8(input);
       if (encoded is Uint8List) {
         return encoded.buffer.asByteData();
       } else {
