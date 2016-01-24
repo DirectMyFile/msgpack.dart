@@ -17,7 +17,9 @@ class StringCache {
   }
 
   static void store(String string) {
-    _cache[string] = _toUTF8(string);
+    if (!has(string)) {
+      _cache[string] = _toUTF8(string);
+    }
   }
 
   static List<int> get(String string) {
