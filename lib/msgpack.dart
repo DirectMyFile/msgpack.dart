@@ -8,6 +8,8 @@ part "src/unpacker.dart";
 part "src/message.dart";
 part "src/stateful_packer.dart";
 
+final bool _JS = identical(1, 1.0);
+
 /// A Cache for Common Strings
 class StringCache {
   static Map<String, List<int>> _cache = {};

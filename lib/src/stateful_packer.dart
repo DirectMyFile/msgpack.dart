@@ -93,7 +93,7 @@ class StatefulPacker {
         _encodeUint32(value);
       } else {
         write(0xcf);
-        _encodeUint64(value);
+        _encodeUint64(value, true);
       }
     }
   }
@@ -110,11 +110,19 @@ class StatefulPacker {
     write(value & 0xff);
   }
 
-  void _encodeUint64(int value) {
-    write((value >> 56) & 0xff);
-    write((value >> 48) & 0xff);
-    write((value >> 40) & 0xff);
-    write((value >> 32) & 0xff);
+  void _encodeUint64(int value, [bool isSigned = false]) {
+    if (_JS && isSigned) {
+      write((value ~/ 72057594037927936) & 0xff);
+      write((value ~/ 281474976710656) & 0xff);
+      write((value ~/ 1099511627776) & 0xff);
+      write((value ~/ 4294967296) & 0xff);
+    } else {
+      write((value >> 56) & 0xff);
+      write((value >> 48) & 0xff);
+      write((value >> 40) & 0xff);
+      write((value >> 32) & 0xff);
+    }
+
     write((value >> 24) & 0xff);
     write((value >> 16) & 0xff);
     write((value >> 8) & 0xff);

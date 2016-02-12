@@ -1,5 +1,7 @@
 part of msgpack;
 
+const int _MAX_UINT32 = 4294967295;
+
 dynamic unpack(buffer) {
   if (buffer is TypedData) {
     buffer = buffer.buffer;
@@ -176,11 +178,9 @@ class Unpacker {
   }
 
   int unpackU64() {
-    var num = 0;
-    for (var i = 0; i < 8; i++) {
-      num = (num << 8) | unpackU8();
-    }
-    return num;
+    var high = unpackU32();
+    var low = unpackU32();
+    return (high * (_MAX_UINT32 + 1)) + low;
   }
 
   int unpackU32() {
@@ -203,33 +203,25 @@ class Unpacker {
   }
 
   int unpackS64() {
-    var bytes = [
-      unpackU8(),
-      unpackU8(),
-      unpackU8(),
-      unpackU8(),
-      unpackU8(),
-      unpackU8(),
-      unpackU8(),
-      unpackU8()
-    ];
-    var negate = (bytes[0] & 0x80) != 0;
-    var x = 0;
-    var o = 0;
-    var carry = 1;
-    for (var i = 7, m = 1; i >= 0; i--, m *= 256) {
-      var v = bytes[o + i];
+    var high = unpackU32();
+    var low = unpackU32();
 
-      if (negate) {
-        v = (v ^ 0xff) + carry;
-        carry = v >> 8;
-        v &= 0xff;
-      }
+    if ((high & 0x80000000) != 0) {
+      high = _onesComplement(high);
+      low = _onesComplement(low);
 
-      x += v * m;
+      return -((high * (_MAX_UINT32 + 1)) + low + 1);
+    } else {
+      return (high * (_MAX_UINT32 + 1)) + low;
     }
+  }
 
-    return negate ? -x : x;
+  int _onesComplement(int num) {
+    num = ~num;
+    if (num < 0) {
+      num = (num & 0x7FFFFFFF) + 0x80000000;
+    }
+    return num;
   }
 
   int unpackS32() {

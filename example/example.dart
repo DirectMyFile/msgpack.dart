@@ -2,16 +2,16 @@ import "package:msgpack/msgpack.dart";
 
 main() {
   var data = {
-    "responses": [
-      {
-        "rid": 0,
-        "updates": [
-          [6, 21901.11328125, "2015-11-28T13:19:13.164-05:00"],
-          [8, 31.844969287790363, "2015-11-28T13:19:13.164-05:00"]
-        ]
-      }
-    ],
-    "msg": 99
+    "String": "Hello World",
+    "Integer": 42,
+    "Double": 45.29,
+    "Integer List": [1, 2, 3],
+    "Map": {
+      1: 2,
+      3: 4
+    },
+    "Large Number": 1455232609379,
+    "Negative Large Number": -1455232609379
   };
 
   List<int> packed = pack(data);
