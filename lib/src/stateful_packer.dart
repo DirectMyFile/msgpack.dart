@@ -226,7 +226,7 @@ class StatefulPacker {
       if (list != null) {
         lists.add(new Uint8List.view(list.buffer, 0, pos));
       }
-      list = new Uint8List(64);
+      list = new Uint8List(128);
       pos = 0;
     }
 

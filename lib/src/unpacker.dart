@@ -298,7 +298,9 @@ class Unpacker {
   }
 
   String unpackString(int count) {
-    String value = const Utf8Decoder().convert(new Uint8List.view(data.buffer, offset, count));
+    String value = const Utf8Decoder().convert(
+      new Uint8List.view(data.buffer, offset, count)
+    );
     offset += count;
     return value;
   }
