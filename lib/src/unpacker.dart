@@ -4,9 +4,11 @@ const int _maxUint32 = 4294967295;
 
 dynamic unpack(input) {
   ByteBuffer buff;
+  int offset = 0;
 
   if (input is TypedData) {
     buff = input.buffer;
+    offset = input.offsetInBytes;
   } else if (input is List<int>) {
     buff = new Uint8List.fromList(input).buffer;
   } else {
@@ -14,9 +16,9 @@ dynamic unpack(input) {
   }
 
   if (_unpacker == null) {
-    _unpacker = new Unpacker(buff);
+    _unpacker = new Unpacker(buff, offset);
   } else {
-    _unpacker.reset(buff);
+    _unpacker.reset(buff, offset);
   }
 
   var value = _unpacker.unpack();
@@ -28,9 +30,11 @@ Unpacker _unpacker;
 
 unpackMessage(input, factory(List fields)) {
   ByteBuffer buff;
+  int offset = 0;
 
   if (input is TypedData) {
     buff = input.buffer;
+    offset = input.offsetInBytes;
   }
 
   if (input is List<int>) {
@@ -40,7 +44,7 @@ unpackMessage(input, factory(List fields)) {
   if (_unpacker == null) {
     _unpacker = new Unpacker(buff);
   } else {
-    _unpacker.reset(buff);
+    _unpacker.reset(buff, offset);
   }
 
   var value = _unpacker.unpackMessage(factory);
@@ -56,9 +60,9 @@ class Unpacker {
     data = buffer.asByteData();
   }
 
-  void reset(ByteBuffer buff) {
+  void reset(ByteBuffer buff, int off) {
     data = buff.asByteData();
-    offset = 0;
+    offset = off;
   }
 
   unpack() {
