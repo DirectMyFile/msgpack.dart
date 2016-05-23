@@ -8,7 +8,7 @@ part "src/unpacker.dart";
 part "src/message.dart";
 part "src/stateful_packer.dart";
 
-final bool _JS = identical(1, 1.0);
+final bool _isJavaScript = identical(1, 1.0);
 
 /// A Cache for Common Strings
 class StringCache {

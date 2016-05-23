@@ -1,6 +1,11 @@
 part of msgpack;
 
 class StatefulPacker {
+  int _pos = 0;
+  int _len = 0;
+  Uint8List _list;
+  List<Uint8List> _lists;
+
   StatefulPacker();
 
   void pack(value) {
@@ -111,7 +116,7 @@ class StatefulPacker {
   }
 
   void _encodeUint64(int value, [bool isSigned = false]) {
-    if (_JS && isSigned) {
+    if (_isJavaScript && isSigned) {
       write((value ~/ 72057594037927936) & 0xff);
       write((value ~/ 281474976710656) & 0xff);
       write((value ~/ 1099511627776) & 0xff);
@@ -218,46 +223,41 @@ class StatefulPacker {
   }
 
   void write(int b) {
-    if (lists == null) {
-      lists = [];
+    if (_lists == null) {
+      _lists = [];
     }
 
-    if (list == null || pos >= list.length) {
-      if (list != null) {
-        lists.add(new Uint8List.view(list.buffer, 0, pos));
+    if (_list == null || _pos >= _list.length) {
+      if (_list != null) {
+        _lists.add(new Uint8List.view(_list.buffer, 0, _pos));
       }
-      list = new Uint8List(128);
-      pos = 0;
+      _list = new Uint8List(128);
+      _pos = 0;
     }
 
-    list[pos] = b;
-    pos++;
-    len++;
+    _list[_pos] = b;
+    _pos++;
+    _len++;
   }
 
   Uint8List done() {
-    if (list != null && pos != 0) {
-      lists.add(new Uint8List.view(list.buffer, 0, pos));
-      pos = 0;
+    if (_list != null && _pos != 0) {
+      _lists.add(new Uint8List.view(_list.buffer, 0, _pos));
+      _pos = 0;
     }
 
-    var out = new Uint8List(len);
+    var out = new Uint8List(_len);
     var i = 0;
-    for (var a in lists) {
+    for (var a in _lists) {
       for (var b in a) {
         out[i] = b;
         i++;
       }
     }
-    list = null;
-    lists = null;
-    len = 0;
-    pos = 0;
+    _list = null;
+    _lists = null;
+    _len = 0;
+    _pos = 0;
     return out;
   }
-
-  int pos = 0;
-  int len = 0;
-  Uint8List list;
-  List<Uint8List> lists;
 }

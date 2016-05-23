@@ -37,7 +37,7 @@ class BinaryHelper {
       return input.buffer.asByteData();
     } else if (input is ByteBuffer) {
       return input.asByteData();
-    } else if (input is List) {
+    } else if (input is List<int>) {
       return new Uint8List.fromList(input).buffer.asByteData();
     } else if (input is String) {
       var encoded = _toUTF8(input);
@@ -75,9 +75,10 @@ class Packer {
   }
 
   List<int> packAll(values) {
-    List<int> encoded = [];
-    for (var value in values)
+    var encoded = <int>[];
+    for (var value in values) {
       encoded.addAll(pack(value));
+    }
     return encoded;
   }
 
@@ -174,14 +175,18 @@ class Packer {
   }
 
   List<int> _encodeUint16(int value, [Uint8List bytes, int offset = 0]) {
-    if (bytes == null) bytes = new Uint8List(2);
+    if (bytes == null) {
+      bytes = new Uint8List(2);
+    }
     bytes[offset] = (value >> 8) & 0xff;
     bytes[offset + 1] = value & 0xff;
     return bytes;
   }
 
   Uint8List _encodeUint32(int value, [Uint8List bytes, int offset = 0]) {
-    if (bytes == null) bytes = new Uint8List(4);
+    if (bytes == null) {
+      bytes = new Uint8List(4);
+    }
     bytes[offset] = (value >> 24) & 0xff;
     bytes[offset + 1] = (value >> 16) & 0xff;
     bytes[offset + 2] = (value >> 8) & 0xff;
@@ -190,7 +195,9 @@ class Packer {
   }
 
   List<int> _encodeUint64(int value, [Uint8List bytes, int offset = 0]) {
-    if (bytes == null) bytes = new Uint8List(8);
+    if (bytes == null) {
+      bytes = new Uint8List(8);
+    }
     bytes[offset] = (value >> 56) & 0xff;
     bytes[offset + 1] = (value >> 48) & 0xff;
     bytes[offset + 2] = (value >> 40) & 0xff;
@@ -205,8 +212,8 @@ class Packer {
   static const Utf8Encoder _utf8Encoder = const Utf8Encoder();
 
   List<int> packString(String value) {
-    List<int> encoded = [];
-    List<int> utf8 = _utf8Encoder.convert(value);
+    var encoded = <int>[];
+    var utf8 = _utf8Encoder.convert(value);
     if (utf8.length < 32) encoded.add(0xa0 | utf8.length);
     else if (utf8.length < 256) encoded.addAll([0xd9, utf8.length]);
     else if (utf8.length < 65536) encoded
@@ -232,7 +239,7 @@ class Packer {
   }
 
   List<int> packList(List value) {
-    List<int> encoded = [];
+    var encoded = <int>[];
     if (value.length < 16) encoded.add(0x90 + value.length);
     else if (value.length < 0x100) encoded
       ..add(0xdc)

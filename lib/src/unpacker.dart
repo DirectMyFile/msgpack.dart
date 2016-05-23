@@ -1,20 +1,22 @@
 part of msgpack;
 
-const int _MAX_UINT32 = 4294967295;
+const int _maxUint32 = 4294967295;
 
-dynamic unpack(buffer) {
-  if (buffer is TypedData) {
-    buffer = buffer.buffer;
-  }
+dynamic unpack(input) {
+  ByteBuffer buff;
 
-  if (buffer is List) {
-    buffer = new Uint8List.fromList(buffer).buffer;
+  if (input is TypedData) {
+    buff = input.buffer;
+  } else if (input is List<int>) {
+    buff = new Uint8List.fromList(input).buffer;
+  } else {
+    throw new ArgumentError.value(input, "input", "Not a byte source.");
   }
 
   if (_unpacker == null) {
-    _unpacker = new Unpacker(buffer);
+    _unpacker = new Unpacker(buff);
   } else {
-    _unpacker.reset(buffer);
+    _unpacker.reset(buff);
   }
 
   var value = _unpacker.unpack();
@@ -24,19 +26,21 @@ dynamic unpack(buffer) {
 
 Unpacker _unpacker;
 
-unpackMessage(buffer, factory(List fields)) {
-  if (buffer is TypedData) {
-    buffer = buffer.buffer;
+unpackMessage(input, factory(List fields)) {
+  ByteBuffer buff;
+
+  if (input is TypedData) {
+    buff = input.buffer;
   }
 
-  if (buffer is List) {
-    buffer = new Uint8List.fromList(buffer).buffer;
+  if (input is List<int>) {
+    buff = new Uint8List.fromList(input).buffer;
   }
 
   if (_unpacker == null) {
-    _unpacker = new Unpacker(buffer);
+    _unpacker = new Unpacker(buff);
   } else {
-    _unpacker.reset(buffer);
+    _unpacker.reset(buff);
   }
 
   var value = _unpacker.unpackMessage(factory);
@@ -180,7 +184,7 @@ class Unpacker {
   int unpackU64() {
     var high = unpackU32();
     var low = unpackU32();
-    return (high * (_MAX_UINT32 + 1)) + low;
+    return (high * (_maxUint32 + 1)) + low;
   }
 
   int unpackU32() {
@@ -210,9 +214,9 @@ class Unpacker {
       high = _onesComplement(high);
       low = _onesComplement(low);
 
-      return -((high * (_MAX_UINT32 + 1)) + low + 1);
+      return -((high * (_maxUint32 + 1)) + low + 1);
     } else {
-      return (high * (_MAX_UINT32 + 1)) + low;
+      return (high * (_maxUint32 + 1)) + low;
     }
   }
 

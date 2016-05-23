@@ -18,11 +18,8 @@ class Fraction {
     return new Fraction(numerator / cd, denominator / cd);
   }
 
-  Fraction scale(num x, [bool left = true]) {
-    return this;
-  }
-
-  Fraction cross(Fraction other) => new Fraction(other.denominator * numerator, other.numerator * denominator);
+  Fraction cross(Fraction other) =>
+    new Fraction(other.denominator * numerator, other.numerator * denominator);
 
   @override
   String toString() => "${numerator}/${denominator}";
@@ -46,9 +43,9 @@ main(List<String> args) async {
   }
 
   if (args.contains("--savings")) {
-    var numbers = {};
-    for (var i = 1; i <= 1000; i++) {
-      numbers[i.toString()] = i + 1;
+    var numbers = [];
+    for (var i = 1; i <= 100000; i++) {
+      numbers.add(i);
     }
 
     var jsonBytes = UTF8.encode(JSON.encode(numbers)).length;
@@ -58,7 +55,6 @@ main(List<String> args) async {
     print("MsgPack: ${msgpackBytes} bytes");
     print("JSON: ${jsonBytes} bytes");
     print("Ratio: ${fract.toRatioString()}");
-    print("Per MB: ${fract.scale(1024)}");
     exit(0);
   }
 
