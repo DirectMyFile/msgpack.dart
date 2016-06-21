@@ -11,7 +11,8 @@ main() {
       3: 4
     },
     "Large Number": 1455232609379,
-    "Negative Large Number": -1455232609379
+    "Negative Large Number": -1455232609379,
+    "Simple Negative": -59
   };
 
   List<int> packed = pack(data);

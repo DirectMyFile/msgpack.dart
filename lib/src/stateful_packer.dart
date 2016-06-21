@@ -178,28 +178,22 @@ class StatefulPacker {
         buffer.writeUint32(value);
       } else {
         buffer.writeUint8(0xcf);
-        _encodeUint64(value, true);
+        _encodeUint64(value);
       }
     }
   }
 
-  void _encodeUint64(int value, [bool isSigned = false]) {
-    if (_isJavaScript && isSigned) {
-      buffer.writeUint8((value ~/ 72057594037927936) & 0xff);
-      buffer.writeUint8((value ~/ 281474976710656) & 0xff);
-      buffer.writeUint8((value ~/ 1099511627776) & 0xff);
-      buffer.writeUint8((value ~/ 4294967296) & 0xff);
-    } else {
-      buffer.writeUint8((value >> 56) & 0xff);
-      buffer.writeUint8((value >> 48) & 0xff);
-      buffer.writeUint8((value >> 40) & 0xff);
-      buffer.writeUint8((value >> 32) & 0xff);
-    }
-
-    buffer.writeUint8((value >> 24) & 0xff);
-    buffer.writeUint8((value >> 16) & 0xff);
-    buffer.writeUint8((value >> 8) & 0xff);
-    buffer.writeUint8(value & 0xff);
+  void _encodeUint64(int value) {
+    var high = (value / 0x100000000).floor();
+    var low = value & 0xffffffff;
+    buffer.writeUint8((high >> 24) & 0xff);
+    buffer.writeUint8((high >> 16) & 0xff);
+    buffer.writeUint8((high >>  8) & 0xff);
+    buffer.writeUint8(high & 0xff);
+    buffer.writeUint8((low  >> 24) & 0xff);
+    buffer.writeUint8((low  >> 16) & 0xff);
+    buffer.writeUint8((low  >>  8) & 0xff);
+    buffer.writeUint8(low & 0xff);
   }
 
   static const Utf8Encoder _utf8Encoder = const Utf8Encoder();

@@ -211,16 +211,39 @@ class Unpacker {
   }
 
   int unpackS64() {
-    var high = unpackU32();
-    var low = unpackU32();
+    var bytes = [
+      unpackU8(),
+      unpackU8(),
+      unpackU8(),
+      unpackU8(),
+      unpackU8(),
+      unpackU8(),
+      unpackU8(),
+      unpackU8()
+    ];
 
-    if ((high & 0x80000000) != 0) {
-      high = _onesComplement(high);
-      low = _onesComplement(low);
+    var num = bytes[0];
 
-      return -((high * (_maxUint32 + 1)) + low + 1);
+    if ((num & 0x80) != 0) {
+      var out = (num ^ 0xff) * 0x100000000000000;
+      out += (bytes[1] ^ 0xff) * 0x1000000000000;
+      out += (bytes[2] ^ 0xff) * 0x10000000000;
+      out += (bytes[3] ^ 0xff) * 0x100000000;
+      out += (bytes[4] ^ 0xff) * 0x1000000;
+      out += (bytes[5] ^ 0xff) * 0x10000;
+      out += (bytes[6] ^ 0xff) * 0x100;
+      out += (bytes[7] ^ 0xff) + 1;
+      return -out;
     } else {
-      return (high * (_maxUint32 + 1)) + low;
+      var out = num * 0x100000000000000;
+      out += bytes[1] * 0x1000000000000;
+      out += bytes[2] * 0x10000000000;
+      out += bytes[3] * 0x100000000;
+      out += bytes[4] * 0x1000000;
+      out += bytes[5] * 0x10000;
+      out += bytes[6] * 0x100;
+      out += bytes[7];
+      return out;
     }
   }
 
@@ -283,26 +306,8 @@ class Unpacker {
   }
 
   int unpackS8() {
-    var bytes = [
-      unpackU8()
-    ];
-    var negate = (bytes[0] & 0x10) != 0;
-    var x = 0;
-    var o = 0;
-    var carry = 1;
-    for (var i = 0, m = 1; i >= 0; i--, m *= 256) {
-      var v = bytes[o + i];
-
-      if (negate) {
-        v = (v ^ 0xff) + carry;
-        carry = v >> 8;
-        v &= 0xff;
-      }
-
-      x += v * m;
-    }
-
-    return negate ? -x : x;
+    var num = unpackU8();
+    return num < 0x80 ? num : num - 0x100;
   }
 
   String unpackString(int count) {
