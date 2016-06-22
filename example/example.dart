@@ -1,6 +1,19 @@
 import "package:msgpack/msgpack.dart";
 
+import "dart:typed_data";
+import "dart:math";
+
 main() {
+  var byteList = new Uint8List(512);
+  var random = new Random();
+  for (var i = 0; i < byteList.lengthInBytes; i++) {
+    byteList[i] = random.nextInt(255);
+  }
+  var byteData = byteList.buffer.asByteData(
+    byteList.offsetInBytes,
+    byteList.lengthInBytes
+  );
+
   var data = {
     "String": "Hello World",
     "Integer": 42,
@@ -12,7 +25,8 @@ main() {
     },
     "Large Number": 1455232609379,
     "Negative Large Number": -1455232609379,
-    "Simple Negative": -59
+    "Simple Negative": -59,
+    "Bytes": byteData
   };
 
   List<int> packed = pack(data);
@@ -20,4 +34,16 @@ main() {
 
   print("Original: ${data}");
   print("Unpacked: ${unpacked}");
+
+  ByteData gotByteData = unpacked["Bytes"];
+
+  if (gotByteData.lengthInBytes != byteData.lengthInBytes) {
+    throw "Byte data is not the correct amount of bytes.";
+  }
+
+  for (var i = 0; i < gotByteData.lengthInBytes; i++) {
+    if (byteData.getUint8(i) != gotByteData.getUint8(i)) {
+      throw "Byte data is not the correct content.";
+    }
+  }
 }

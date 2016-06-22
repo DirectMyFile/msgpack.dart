@@ -157,15 +157,7 @@ class Unpacker {
 
     offset += byteOffset;
 
-    var result = new Uint8List(count);
-    var c = 0;
-    for (var i = offset; c < count; i++) {
-      result[c] = data.getUint8(i);
-      c++;
-    }
-    offset += count;
-
-    return result.buffer.asByteData();
+    return data.buffer.asByteData(offset, count);
   }
 
   double unpackFloat32() {
