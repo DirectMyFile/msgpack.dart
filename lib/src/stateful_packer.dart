@@ -198,8 +198,10 @@ class StatefulPacker {
   }
 
   void packBinary(ByteData data) {
-    var count = data.elementSizeInBytes * data.lengthInBytes;
-    var list = data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes);
+    var list = data.buffer.asUint8List(
+      data.offsetInBytes, data.lengthInBytes);
+
+    var count = list.lengthInBytes;
 
     if (count <= 255) {
       buffer.writeUint8(0xc4);
@@ -346,9 +348,10 @@ class StatefulPacker {
     if (list is Uint8List) {
       buffer.writeUint8List(list);
     } else if (list is ByteData) {
-      for (var i = 0; i < list.lengthInBytes; i++) {
-        buffer.writeUint8(list.getUint8(i));
-      }
+      buffer.writeUint8List(list.buffer.asUint8List(
+        list.offsetInBytes,
+        list.lengthInBytes
+      ));
     } else if (list is List) {
       for (var b in list) {
         buffer.writeUint8(b);

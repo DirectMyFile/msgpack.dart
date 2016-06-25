@@ -87,7 +87,7 @@ class Packer {
   }
 
   List<int> packBinary(ByteData bytes) {
-    var count = bytes.elementSizeInBytes * bytes.lengthInBytes;
+    var count = bytes.lengthInBytes;
 
     if (count <= 255) {
       var out = new ByteData(count + 2);
