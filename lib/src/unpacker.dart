@@ -159,7 +159,9 @@ class Unpacker {
     offset += byteOffset;
 
     if (_enableFastBinaryUnpacker) {
-      return data.buffer.asByteData(offset, count);
+      var result = data.buffer.asByteData(offset, count);
+      offset += count;
+      return result;
     } else {
       var result = new Uint8List(count);
       var c = 0;

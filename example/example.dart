@@ -26,7 +26,8 @@ main() {
     "Large Number": 1455232609379,
     "Negative Large Number": -1455232609379,
     "Simple Negative": -59,
-    "Bytes": byteData
+    "Bytes": byteData,
+    "Uint16": 65235
   };
 
   List<int> packed = pack(data);
