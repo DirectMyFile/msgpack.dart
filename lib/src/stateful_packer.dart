@@ -10,70 +10,140 @@ abstract class PackBuffer {
 }
 
 class MsgPackBuffer implements PackBuffer {
-  int _pos = 0;
+  static const int defaultBufferSize = const int.fromEnvironment(
+    "msgpack.packer.defaultBufferSize",
+    defaultValue: 256
+  );
+
+  List<Uint8List> _buffers = <Uint8List>[];
+  Uint8List _buffer;
   int _len = 0;
-  Uint8List _list;
-  List<Uint8List> _lists;
+  int _offset = 0;
+  int _totalLength = 0;
+
+  final int bufferSize;
+
+  MsgPackBuffer({this.bufferSize: defaultBufferSize});
+
+  void _checkBuffer() {
+    if (_buffer == null) {
+      _buffer = new Uint8List(bufferSize);
+    }
+  }
+
+  @override
+  void writeUint8(int byte) {
+    if (_buffer == null) {
+      _buffer = new Uint8List(bufferSize);
+    }
+
+    if (_buffer.lengthInBytes == _len) {
+      _buffers.add(_buffer);
+      _buffer = new Uint8List(bufferSize);
+      _len = 0;
+      _offset = 0;
+    }
+
+    _buffer[_offset] = byte;
+    _offset++;
+    _len++;
+    _totalLength++;
+  }
 
   @override
   void writeUint16(int value) {
-    writeUint8((value >> 8) & 0xff);
-    writeUint8(value & 0xff);
+    _checkBuffer();
+
+    if ((_buffer.lengthInBytes - _len) < 2) {
+      writeUint8((value >> 8) & 0xff);
+      writeUint8(value & 0xff);
+    } else {
+      _buffer[_offset++] = (value >> 8) & 0xff;
+      _buffer[_offset++] = value & 0xff;
+      _len += 2;
+      _totalLength += 2;
+    }
   }
 
   @override
   void writeUint32(int value) {
-    writeUint8((value >> 24) & 0xff);
-    writeUint8((value >> 16) & 0xff);
-    writeUint8((value >> 8) & 0xff);
-    writeUint8(value & 0xff);
+    _checkBuffer();
+
+    if ((_buffer.lengthInBytes - _len) < 4) {
+      writeUint8((value >> 24) & 0xff);
+      writeUint8((value >> 16) & 0xff);
+      writeUint8((value >> 8) & 0xff);
+      writeUint8(value & 0xff);
+    } else {
+      _buffer[_offset++] = (value >> 24) & 0xff;
+      _buffer[_offset++] = (value >> 16) & 0xff;
+      _buffer[_offset++] = (value >> 8) & 0xff;
+      _buffer[_offset++] = value & 0xff;
+      _len += 4;
+      _totalLength += 4;
+    }
   }
 
-  @override
-  void writeUint8(int b) {
-    if (_lists == null) {
-      _lists = [];
-    }
+  Uint8List read() {
+    var out = new Uint8List(_totalLength);
+    var off = 0;
 
-    if (_list == null || _pos >= _list.length) {
-      if (_list != null) {
-        _lists.add(new Uint8List.view(_list.buffer, 0, _pos));
+    var bufferCount = _buffers.length;
+    for (var i = 0; i < bufferCount; i++) {
+      Uint8List buff = _buffers[i];
+
+      for (var x = 0; x < buff.lengthInBytes; x++) {
+        out[off] = buff[x];
+        off++;
       }
-      _list = new Uint8List(128);
-      _pos = 0;
     }
 
-    _list[_pos] = b;
-    _pos++;
-    _len++;
+    if (_buffer != null) {
+      for (var i = 0; i < _len; i++) {
+        out[off] = _buffer[i];
+        off++;
+      }
+    }
+
+    return out;
   }
 
-  @override
   Uint8List done() {
-    if (_list != null && _pos != 0) {
-      _lists.add(new Uint8List.view(_list.buffer, 0, _pos));
-      _pos = 0;
-    }
-
-    var out = new Uint8List(_len);
-    var i = 0;
-    for (var a in _lists) {
-      for (var b in a) {
-        out[i] = b;
-        i++;
-      }
-    }
-    _list = null;
-    _lists = null;
+    Uint8List out = read();
+    _buffers.length = 0;
     _len = 0;
-    _pos = 0;
+    _totalLength = 0;
+    _offset = 0;
     return out;
   }
 
   @override
-  void writeUint8List(Uint8List list) {
-    for (var b in list) {
-      writeUint8(b);
+  void writeUint8List(Uint8List data) {
+    _checkBuffer();
+
+    var dataSize = data.lengthInBytes;
+
+    var bufferSpace = _buffer.lengthInBytes - _len;
+
+    if (bufferSpace < dataSize) {
+      int i;
+      for (i = 0; i < bufferSpace; i++) {
+        _buffer[_offset++] = data[i];
+      }
+
+      _len += bufferSpace;
+      _totalLength += bufferSpace;
+
+      while(i < dataSize) {
+        writeUint8(data[i++]);
+      }
+    } else {
+      for (var i = 0; i < dataSize; i++) {
+        _buffer[_offset++] = data[i];
+      }
+
+      _len += dataSize;
+      _totalLength += dataSize;
     }
   }
 }
