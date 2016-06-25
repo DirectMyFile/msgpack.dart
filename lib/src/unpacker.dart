@@ -1,7 +1,7 @@
 part of msgpack;
 
 const int _maxUint32 = 4294967295;
-const bool _enableFastBinaryUnpacker = true;
+const bool _enableFastBinaryUnpacker = false;
 
 dynamic unpack(input) {
   ByteBuffer buff;
