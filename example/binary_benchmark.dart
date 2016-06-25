@@ -4,7 +4,7 @@ import "dart:typed_data";
 import "dart:math";
 
 main() {
-  var byteList = new Uint8List(1024 * 1024 * 5);
+  var byteList = new Uint8List(1024 * 30);
   var random = new Random();
   for (var i = 0; i < byteList.lengthInBytes; i++) {
     byteList[i] = random.nextInt(255);
@@ -29,6 +29,10 @@ main() {
       }
     ]
   };
+
+  for (var i = 1; i <= 5; i++) {
+    pack(input);
+  }
 
   var watch = new Stopwatch();
   watch.start();
