@@ -1,6 +1,7 @@
 part of msgpack;
 
 const int _maxUint32 = 4294967295;
+const bool _enableFastBinaryUnpacker = false;
 
 dynamic unpack(input) {
   ByteBuffer buff;
@@ -157,7 +158,22 @@ class Unpacker {
 
     offset += byteOffset;
 
-    return data.buffer.asByteData(offset, count);
+    if (_enableFastBinaryUnpacker) {
+      return data.buffer.asByteData(offset, count);
+    } else {
+      var result = new Uint8List(count);
+      var c = 0;
+      for (var i = offset; c < count; i++) {
+        result[c] = data.getUint8(i);
+        c++;
+      }
+      offset += count;
+
+      return result.buffer.asByteData(
+        result.offsetInBytes,
+        result.lengthInBytes
+      );
+    }
   }
 
   double unpackFloat32() {
@@ -239,14 +255,6 @@ class Unpacker {
     }
   }
 
-  int _onesComplement(int num) {
-    num = ~num;
-    if (num < 0) {
-      num = (num & 0x7FFFFFFF) + 0x80000000;
-    }
-    return num;
-  }
-
   int unpackS32() {
     var bytes = [
       unpackU8(),
@@ -304,8 +312,9 @@ class Unpacker {
 
   String unpackString(int count) {
     String value = const Utf8Decoder().convert(
-      new Uint8List.view(data.buffer, offset, count)
+      data.buffer.asUint8List(offset, count)
     );
+
     offset += count;
     return value;
   }

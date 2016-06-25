@@ -108,9 +108,11 @@ class MsgPackBuffer implements PackBuffer {
     return out;
   }
 
+  @override
   Uint8List done() {
     Uint8List out = read();
     _buffers.length = 0;
+    _buffer = null;
     _len = 0;
     _totalLength = 0;
     _offset = 0;
