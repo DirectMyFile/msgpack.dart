@@ -12,7 +12,7 @@ abstract class PackBuffer {
 class MsgPackBuffer implements PackBuffer {
   static const int defaultBufferSize = const int.fromEnvironment(
     "msgpack.packer.defaultBufferSize",
-    defaultValue: 256
+    defaultValue: 512
   );
 
   List<Uint8List> _buffers = <Uint8List>[];
@@ -111,11 +111,11 @@ class MsgPackBuffer implements PackBuffer {
   @override
   Uint8List done() {
     Uint8List out = read();
-    _buffers.length = 0;
-    _buffer = null;
+    _buffers = new List<Uint8List>();
     _len = 0;
     _totalLength = 0;
     _offset = 0;
+    _buffer = null;
     return out;
   }
 
