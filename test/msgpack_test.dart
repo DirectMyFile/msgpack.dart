@@ -33,16 +33,7 @@ class OuterMessage extends Message {
   List toList() => [a, b, list, inner];
 }
 
-Packer packer;
-
 void main() {
-  setUp(() {
-    packer = new Packer();
-  });
-  tearDown(() {
-    packer = null;
-  });
-
   test("Pack 5-character string", packString5);
   test("Pack 22-character string", packString22);
   test("Pack 256-character string", packString256);
@@ -63,12 +54,12 @@ void main() {
 // Test packing
 
 void packString5() {
-  List<int> encoded = packer.pack("hello");
+  List<int> encoded = pack("hello");
   expect(encoded, orderedEquals([165, 104, 101, 108, 108, 111]));
 }
 
 void packString22() {
-  List<int> encoded = packer.pack("hello there, everyone!");
+  List<int> encoded = pack("hello there, everyone!");
   expect(encoded, orderedEquals([
     182,
     104,
@@ -97,7 +88,7 @@ void packString22() {
 }
 
 void packString256() {
-  List<int> encoded = packer.pack(
+  List<int> encoded = pack(
     "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
   expect(encoded, hasLength(259));
   expect(encoded.sublist(0, 3), orderedEquals([218, 1, 0]));
@@ -105,21 +96,21 @@ void packString256() {
 }
 
 void packStringArray() {
-  List<int> encoded = packer.pack(["one", "two", "three"]);
+  List<int> encoded = pack(["one", "two", "three"]);
   expect(encoded, orderedEquals(
     [147, 163, 111, 110, 101, 163, 116, 119, 111, 165, 116, 104, 114, 101, 101
     ]));
 }
 
 void packIntToStringMap() {
-  List<int> encoded = packer.pack({1: "one", 2: "two"});
+  List<int> encoded = pack({1: "one", 2: "two"});
   expect(encoded,
     orderedEquals([130, 1, 163, 111, 110, 101, 2, 163, 116, 119, 111]));
 }
 
 void packMessage() {
   Message message = new TestMessage(1, "one", {2: "two"});
-  List<int> encoded = packer.pack(message);
+  List<int> encoded = pack(message);
   expect(encoded,
     orderedEquals([147, 1, 163, 111, 110, 101, 129, 2, 163, 116, 119, 111]));
 }
@@ -127,7 +118,7 @@ void packMessage() {
 void packNestedMessage() {
   Message inner = new TestMessage(1, "one", {2: "two"});
   Message outer = new OuterMessage("three", true, [4, 5, 6], inner);
-  List<int> encoded = packer.pack(outer);
+  List<int> encoded = pack(outer);
   expect(encoded, orderedEquals([
     148,
     165,

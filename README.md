@@ -11,7 +11,7 @@ import "package:msgpack/msgpack.dart";
 
 main() {
   var binary = new Uint8List.fromList(
-      new List<int>.generate(40, (int i) => i)
+    new List<int>.generate(40, (int i) => i)
   ).buffer.asByteData();
 
   var data = {

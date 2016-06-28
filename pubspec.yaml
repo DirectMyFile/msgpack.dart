@@ -1,6 +1,6 @@
 name: msgpack
 description: MsgPack for Dart
-version: 0.7.2
+version: 0.8.0
 authors:
 - Kenneth Endfinger <kaendfinger@gmail.com>
 - Dan Ellis <dan@danellis.me>

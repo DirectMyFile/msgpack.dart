@@ -17,7 +17,7 @@ main() {
   ];
 
   var a = pack(data);
-  var b = pack(data, stateful: false);
+  var b = pack(data);
 
   print(a);
   print(b);

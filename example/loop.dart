@@ -24,7 +24,7 @@ main(List<String> args) async {
   var counts = [];
   while (true) {
     watch.start();
-    var packed = pack(data, stateful: true);
+    var packed = pack(data);
     unpack(packed);
     watch.stop();
     counts.add(watch.elapsedMicroseconds);

@@ -1,15 +1,11 @@
 part of msgpack;
 
-List<int> pack(value, {bool stateful: true}) {
-  if (stateful) {
-    if (_statefulPacker == null) {
-      _statefulPacker = new StatefulPacker();
-    }
-    _statefulPacker.pack(value);
-    return _statefulPacker.done();
-  } else {
-    return const Packer().pack(value);
+Uint8List pack(value) {
+  if (_statefulPacker == null) {
+    _statefulPacker = new StatefulPacker();
   }
+  _statefulPacker.pack(value);
+  return _statefulPacker.done();
 }
 
 StatefulPacker _statefulPacker;
@@ -54,222 +50,368 @@ class BinaryHelper {
   }
 }
 
-class Packer {
-  const Packer();
+abstract class PackBuffer {
+  void writeUint8(int b);
+  void writeUint16(int value);
+  void writeUint32(int value);
+  void writeUint8List(Uint8List list);
 
-  List<int> pack(value) {
-    if (value == null) return const [0xc0];
-    else if (value == false) return const [0xc2];
-    else if (value == true) return const [0xc3];
-    else if (value is int) return packInt(value);
-    else if (value is String) return packString(value);
-    else if (value is List) return packList(value);
-    else if (value is Iterable) return packList(value.toList());
-    else if (value is Map) return packMap(value);
-    else if (value is double) return packDouble(value);
-    else if (value is ByteData) return packBinary(value);
-    else if (value is Message) return packMessage(value);
-    else if (value is PackedReference) return value.data;
-    else if (value is Float) return packFloat(value.value);
-    throw new Exception("Failed to pack value: ${value}");
-  }
+  Uint8List done();
+}
 
-  List<int> packAll(values) {
-    var encoded = <int>[];
-    for (var value in values) {
-      encoded.addAll(pack(value));
+class MsgPackBuffer implements PackBuffer {
+  static const int defaultBufferSize = const int.fromEnvironment(
+    "msgpack.packer.defaultBufferSize",
+    defaultValue: 512
+  );
+
+  List<Uint8List> _buffers = <Uint8List>[];
+  Uint8List _buffer;
+  int _len = 0;
+  int _offset = 0;
+  int _totalLength = 0;
+
+  final int bufferSize;
+
+  MsgPackBuffer({this.bufferSize: defaultBufferSize});
+
+  void _checkBuffer() {
+    if (_buffer == null) {
+      _buffer = new Uint8List(bufferSize);
     }
-    return encoded;
   }
 
-  List<int> packMessage(Message value) {
-    return packList(value.toList());
+  @override
+  void writeUint8(int byte) {
+    if (_buffer == null) {
+      _buffer = new Uint8List(bufferSize);
+    }
+
+    if (_buffer.lengthInBytes == _len) {
+      _buffers.add(_buffer);
+      _buffer = new Uint8List(bufferSize);
+      _len = 0;
+      _offset = 0;
+    }
+
+    _buffer[_offset] = byte;
+    _offset++;
+    _len++;
+    _totalLength++;
   }
 
-  List<int> packBinary(ByteData bytes) {
-    var count = bytes.lengthInBytes;
+  @override
+  void writeUint16(int value) {
+    _checkBuffer();
+
+    if ((_buffer.lengthInBytes - _len) < 2) {
+      writeUint8((value >> 8) & 0xff);
+      writeUint8(value & 0xff);
+    } else {
+      _buffer[_offset++] = (value >> 8) & 0xff;
+      _buffer[_offset++] = value & 0xff;
+      _len += 2;
+      _totalLength += 2;
+    }
+  }
+
+  @override
+  void writeUint32(int value) {
+    _checkBuffer();
+
+    if ((_buffer.lengthInBytes - _len) < 4) {
+      writeUint8((value >> 24) & 0xff);
+      writeUint8((value >> 16) & 0xff);
+      writeUint8((value >> 8) & 0xff);
+      writeUint8(value & 0xff);
+    } else {
+      _buffer[_offset++] = (value >> 24) & 0xff;
+      _buffer[_offset++] = (value >> 16) & 0xff;
+      _buffer[_offset++] = (value >> 8) & 0xff;
+      _buffer[_offset++] = value & 0xff;
+      _len += 4;
+      _totalLength += 4;
+    }
+  }
+
+  Uint8List read() {
+    var out = new Uint8List(_totalLength);
+    var off = 0;
+
+    var bufferCount = _buffers.length;
+    for (var i = 0; i < bufferCount; i++) {
+      Uint8List buff = _buffers[i];
+
+      for (var x = 0; x < buff.lengthInBytes; x++) {
+        out[off] = buff[x];
+        off++;
+      }
+    }
+
+    if (_buffer != null) {
+      for (var i = 0; i < _len; i++) {
+        out[off] = _buffer[i];
+        off++;
+      }
+    }
+
+    return out;
+  }
+
+  @override
+  Uint8List done() {
+    Uint8List out = read();
+    _buffers = new List<Uint8List>();
+    _len = 0;
+    _totalLength = 0;
+    _offset = 0;
+    _buffer = null;
+    return out;
+  }
+
+  @override
+  void writeUint8List(Uint8List data) {
+    _checkBuffer();
+
+    var dataSize = data.lengthInBytes;
+
+    var bufferSpace = _buffer.lengthInBytes - _len;
+
+    if (bufferSpace < dataSize) {
+      int i;
+      for (i = 0; i < bufferSpace; i++) {
+        _buffer[_offset++] = data[i];
+      }
+
+      _len += bufferSpace;
+      _totalLength += bufferSpace;
+
+      while(i < dataSize) {
+        writeUint8(data[i++]);
+      }
+    } else {
+      for (var i = 0; i < dataSize; i++) {
+        _buffer[_offset++] = data[i];
+      }
+
+      _len += dataSize;
+      _totalLength += dataSize;
+    }
+  }
+}
+
+class StatefulPacker {
+  PackBuffer buffer;
+
+  StatefulPacker([this.buffer]) {
+    if (buffer == null) {
+      buffer = new MsgPackBuffer();
+    }
+  }
+
+  void pack(value) {
+    if (value is Iterable && value is! List) {
+      value = value.toList();
+    }
+
+    if (value == null) {
+      buffer.writeUint8(0xc0);
+    } else if (value == false) {
+      buffer.writeUint8(0xc2);
+    } else if (value == true) {
+      buffer.writeUint8(0xc3);
+    } else if (value is int) {
+      packInt(value);
+    } else if (value is String) {
+      packString(value);
+    } else if (value is List) {
+      packList(value);
+    } else if (value is Map) {
+      packMap(value);
+    } else if (value is double) {
+      packDouble(value);
+    } else if (value is Float) {
+      packFloat(value);
+    } else if (value is ByteData) {
+      packBinary(value);
+    } else if (value is PackedReference) {
+      writeAllBytes(value.data);
+    } else {
+      throw new Exception("Failed to pack value: ${value}");
+    }
+  }
+
+  void packAll(values) {
+    for (var value in values) {
+      pack(value);
+    }
+  }
+
+  void packBinary(ByteData data) {
+    var list = data.buffer.asUint8List(
+      data.offsetInBytes, data.lengthInBytes);
+
+    var count = list.lengthInBytes;
 
     if (count <= 255) {
-      var out = new ByteData(count + 2);
-      out.setUint8(0, 0xc4);
-      out.setUint8(1, count);
-      var i = 2;
-      for (var a = 0; a < count; a++) {
-        out.setUint8(i, bytes.getUint8(a));
-        i++;
-      }
-      return out.buffer.asUint8List();
+      buffer.writeUint8(0xc4);
+      buffer.writeUint8(count);
+      writeAllBytes(list);
     } else if (count <= 65535) {
-      var out = new ByteData(count + 3);
-      out.setUint8(0, 0xc5);
-      out.setUint16(1, count);
-      var i = 3;
-      for (var a = 0; a < count; a++) {
-        out.setUint8(i, bytes.getUint8(a));
-        i++;
-      }
-      return out.buffer.asUint8List();
+      buffer.writeUint8(0xc5);
+      buffer.writeUint16(count);
+      writeAllBytes(list);
     } else {
-      var out = new ByteData(count + 5);
-      out.setUint8(0, 0xc6);
-      out.setUint32(1, count);
-      var i = 5;
-      for (var a = 0; a < count; a++) {
-        out.setUint8(i, bytes.getUint8(a));
-        i++;
-      }
-      return out.buffer.asUint8List();
+      buffer.writeUint8(0xc6);
+      buffer.writeUint32(count);
+      writeAllBytes(list);
     }
   }
 
-  List<int> packInt(int value) {
+  void packInt(int value) {
     if (value >= 0 && value < 128) {
-      var list = new Uint8List(1);
-      list[0] = value;
-      return list;
+      buffer.writeUint8(value);
+      return;
     }
-
-    Uint8List list;
 
     if (value < 0) {
       if (value >= -32) {
-        list = new Uint8List(1);
-        list[0] = 0xe0 + value + 32;
+        buffer.writeUint8(0xe0 + value + 32);
       } else if (value > -0x80) {
-        list = new Uint8List(2);
-        list[0] = 0xd0;
-        list[1] = value + 0x100;
+        buffer.writeUint8(0xd0);
+        buffer.writeUint8(value + 0x100);
       } else if (value > -0x8000) {
-        list = new Uint8List(3);
-        _encodeUint16(value + 0x10000, list, 1);
+        buffer.writeUint8(0xd1);
+        buffer.writeUint16(value + 0x10000);
       } else if (value > -0x80000000) {
-        list = new Uint8List(5);
-        list[0] = 0xd2;
-        _encodeUint32(value + 0x100000000, list, 1);
+        buffer.writeUint8(0xd2);
+        buffer.writeUint32(value + 0x100000000);
       } else {
-        list = new Uint8List(9);
-        list[0] = 0xd3;
-        _encodeUint64(value, list, 1);
+        buffer.writeUint8(0xd3);
+        _encodeUint64(value);
       }
     } else {
       if (value < 0x100) {
-        list = new Uint8List(2);
-        list[0] = 0xcc;
-        list[1] = value;
+        buffer.writeUint8(0xcc);
+        buffer.writeUint8(value);
       } else if (value < 0x10000) {
-        list = new Uint8List(3);
-        list[0] = 0xcd;
-        _encodeUint16(value, list, 1);
+        buffer.writeUint8(0xcd);
+        buffer.writeUint16(value);
       } else if (value < 0x100000000) {
-        list = new Uint8List(5);
-        list[0] = 0xce;
-        _encodeUint32(value, list, 1);
+        buffer.writeUint8(0xce);
+        buffer.writeUint32(value);
       } else {
-        list = new Uint8List(9);
-        list[0] = 0xcf;
-        _encodeUint64(value, list, 1);
+        buffer.writeUint8(0xcf);
+        _encodeUint64(value);
       }
     }
-
-    return list;
   }
 
-  List<int> _encodeUint16(int value, [Uint8List bytes, int offset = 0]) {
-    if (bytes == null) {
-      bytes = new Uint8List(2);
-    }
-    bytes[offset] = (value >> 8) & 0xff;
-    bytes[offset + 1] = value & 0xff;
-    return bytes;
-  }
-
-  Uint8List _encodeUint32(int value, [Uint8List bytes, int offset = 0]) {
-    if (bytes == null) {
-      bytes = new Uint8List(4);
-    }
-    bytes[offset] = (value >> 24) & 0xff;
-    bytes[offset + 1] = (value >> 16) & 0xff;
-    bytes[offset + 2] = (value >> 8) & 0xff;
-    bytes[offset + 3] = value & 0xff;
-    return bytes;
-  }
-
-  List<int> _encodeUint64(int value, [Uint8List bytes, int offset = 0]) {
-    if (bytes == null) {
-      bytes = new Uint8List(8);
-    }
-    bytes[offset] = (value >> 56) & 0xff;
-    bytes[offset + 1] = (value >> 48) & 0xff;
-    bytes[offset + 2] = (value >> 40) & 0xff;
-    bytes[offset + 3] = (value >> 32) & 0xff;
-    bytes[offset + 4] = (value >> 24) & 0xff;
-    bytes[offset + 5] = (value >> 16) & 0xff;
-    bytes[offset+ 6] = (value >> 8) & 0xff;
-    bytes[offset + 7] = value & 0xff;
-    return bytes;
+  void _encodeUint64(int value) {
+    var high = (value / 0x100000000).floor();
+    var low = value & 0xffffffff;
+    buffer.writeUint8((high >> 24) & 0xff);
+    buffer.writeUint8((high >> 16) & 0xff);
+    buffer.writeUint8((high >>  8) & 0xff);
+    buffer.writeUint8(high & 0xff);
+    buffer.writeUint8((low  >> 24) & 0xff);
+    buffer.writeUint8((low  >> 16) & 0xff);
+    buffer.writeUint8((low  >>  8) & 0xff);
+    buffer.writeUint8(low & 0xff);
   }
 
   static const Utf8Encoder _utf8Encoder = const Utf8Encoder();
 
-  List<int> packString(String value) {
-    var encoded = <int>[];
-    var utf8 = _utf8Encoder.convert(value);
-    if (utf8.length < 32) encoded.add(0xa0 | utf8.length);
-    else if (utf8.length < 256) encoded.addAll([0xd9, utf8.length]);
-    else if (utf8.length < 65536) encoded
-      ..add(0xda)
-      ..addAll(_encodeUint16(utf8.length));
-    else encoded
-        ..add(0xdb)
-        ..addAll(_encodeUint32(utf8.length));
-    encoded.addAll(utf8);
-    return encoded;
+  void packString(String value) {
+    List<int> utf8;
+
+    if (StringCache.has(value)) {
+      utf8 = StringCache.get(value);
+    } else {
+      utf8 = _toUTF8(value);
+    }
+
+    if (utf8.length < 0x20) {
+      buffer.writeUint8(0xa0 + utf8.length);
+    } else if (utf8.length < 0x100) {
+      buffer.writeUint8(0xd9);
+      buffer.writeUint8(utf8.length);
+    } else if (utf8.length < 0x10000) {
+      buffer.writeUint8(0xda);
+      buffer.writeUint16(utf8.length);
+    } else {
+      buffer.writeUint8(0xdb);
+      buffer.writeUint32(utf8.length);
+    }
+    writeAllBytes(utf8);
   }
 
-  List<int> packFloat(double value) {
-    var f = new ByteData(4);
-    f.setFloat32(0, value);
-    return [0xca]..addAll(f.buffer.asUint8List());
-  }
-
-  List<int> packDouble(double value) {
+  void packDouble(double value) {
+    buffer.writeUint8(0xcb);
     var f = new ByteData(8);
     f.setFloat64(0, value);
-    return [0xcb]..addAll(f.buffer.asUint8List());
+    writeAllBytes(f);
   }
 
-  List<int> packList(List value) {
-    var encoded = <int>[];
-    if (value.length < 16) encoded.add(0x90 + value.length);
-    else if (value.length < 0x100) encoded
-      ..add(0xdc)
-      ..addAll(_encodeUint16(value.length));
-    else encoded
-        ..add(0xdd)
-        ..addAll(_encodeUint32(value.length));
-    for (var element in value) {
-      encoded.addAll(pack(element));
-    }
-    return encoded;
+  void packFloat(Float float) {
+    buffer.writeUint8(0xca);
+    var f = new ByteData(4);
+    f.setFloat32(0, float.value);
+    writeAllBytes(f);
   }
 
-  List<int> packMap(Map value) {
-    var encoded = <int>[];
-
-    if (value.length < 16) {
-      encoded.add(0x80 + value.length);
-    } else if (value.length < 0x100) {
-      encoded.add(0xde);
-      encoded.addAll(_encodeUint16(value.length));
+  void packList(List value) {
+    var len = value.length;
+    if (len < 16) {
+      buffer.writeUint8(0x90 + len);
+    } else if (len < 0x100) {
+      buffer.writeUint8(0xdc);
+      buffer.writeUint16(len);
     } else {
-      encoded.add(0xdf);
-      encoded.addAll(_encodeUint32(value.length));
+      buffer.writeUint8(0xdd);
+      buffer.writeUint32(len);
+    }
+
+    for (var i = 0; i < len; i++) {
+      pack(value[i]);
+    }
+  }
+
+  void packMap(Map value) {
+    if (value.length < 16) {
+      buffer.writeUint8(0x80 + value.length);
+    } else if (value.length < 0x100) {
+      buffer.writeUint8(0xde);
+      buffer.writeUint16(value.length);
+    } else {
+      buffer.writeUint8(0xdf);
+      buffer.writeUint32(value.length);
     }
 
     for (var element in value.keys) {
-      encoded.addAll(pack(element));
-      encoded.addAll(pack(value[element]));
+      pack(element);
+      pack(value[element]);
     }
-    return encoded;
+  }
+
+  void writeAllBytes(list) {
+    if (list is Uint8List) {
+      buffer.writeUint8List(list);
+    } else if (list is ByteData) {
+      buffer.writeUint8List(list.buffer.asUint8List(
+        list.offsetInBytes,
+        list.lengthInBytes
+      ));
+    } else if (list is List) {
+      for (var b in list) {
+        buffer.writeUint8(b);
+      }
+    } else {
+      throw new Exception("I don't know how to write everything in ${list}");
+    }
+  }
+
+  Uint8List done() {
+    return buffer.done();
   }
 }
