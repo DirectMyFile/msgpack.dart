@@ -142,7 +142,7 @@ class MsgPackBuffer implements PackBuffer {
     for (var i = 0; i < bufferCount; i++) {
       Uint8List buff = _buffers[i];
 
-      for (var x = 0; x < buff.lengthInBytes; x++) {
+      for (var x = buff.offsetInBytes; x < buff.lengthInBytes; x++) {
         out[off] = buff[x];
         off++;
       }
