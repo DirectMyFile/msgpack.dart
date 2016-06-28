@@ -185,7 +185,7 @@ class StatefulPacker {
     } else if (value is ByteData) {
       packBinary(value);
     } else if (value is PackedReference) {
-      writeAll(value.data);
+      writeAllBytes(value.data);
     } else {
       throw new Exception("Failed to pack value: ${value}");
     }
@@ -206,15 +206,15 @@ class StatefulPacker {
     if (count <= 255) {
       buffer.writeUint8(0xc4);
       buffer.writeUint8(count);
-      writeAll(list);
+      writeAllBytes(list);
     } else if (count <= 65535) {
       buffer.writeUint8(0xc5);
       buffer.writeUint16(count);
-      writeAll(list);
+      writeAllBytes(list);
     } else {
       buffer.writeUint8(0xc6);
       buffer.writeUint32(count);
-      writeAll(list);
+      writeAllBytes(list);
     }
   }
 
@@ -293,21 +293,21 @@ class StatefulPacker {
       buffer.writeUint8(0xdb);
       buffer.writeUint32(utf8.length);
     }
-    writeAll(utf8);
+    writeAllBytes(utf8);
   }
 
   void packDouble(double value) {
     buffer.writeUint8(0xcb);
     var f = new ByteData(8);
     f.setFloat64(0, value);
-    writeAll(f);
+    writeAllBytes(f);
   }
 
   void packFloat(Float float) {
     buffer.writeUint8(0xca);
     var f = new ByteData(4);
     f.setFloat32(0, float.value);
-    writeAll(f);
+    writeAllBytes(f);
   }
 
   void packList(List value) {
@@ -322,8 +322,8 @@ class StatefulPacker {
       buffer.writeUint32(len);
     }
 
-    for (var element in value) {
-      pack(element);
+    for (var i = 0; i < len; i++) {
+      pack(value[i]);
     }
   }
 
@@ -344,7 +344,7 @@ class StatefulPacker {
     }
   }
 
-  void writeAll(list) {
+  void writeAllBytes(list) {
     if (list is Uint8List) {
       buffer.writeUint8List(list);
     } else if (list is ByteData) {
