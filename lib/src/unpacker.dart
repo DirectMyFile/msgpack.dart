@@ -288,23 +288,24 @@ class Unpacker {
       unpackU8(),
       unpackU8()
     ];
-    var negate = (bytes[0] & 0x20) != 0;
-    var x = 0;
-    var o = 0;
-    var carry = 1;
-    for (var i = 1, m = 1; i >= 0; i--, m *= 256) {
-      var v = bytes[o + i];
-
-      if (negate) {
-        v = (v ^ 0xff) + carry;
-        carry = v >> 8;
-        v &= 0xff;
-      }
-
-      x += v * m;
-    }
-
-    return negate ? -x : x;
+    return bytes[0] * 256 + bytes[1] - 0x10000;
+//    var negate = (bytes[0] & 0x80) != 0;
+//    var x = 0;
+//    var o = 0;
+//    var carry = 1;
+//    for (var i = 1, m = 1; i >= 0; i--, m *= 256) {
+//      var v = bytes[o + i];
+//
+//      if (negate) {
+//        v = (v ^ 0xff) + carry;
+//        carry = v >> 8;
+//        v &= 0xff;
+//      }
+//
+//      x += v * m;
+//    }
+//
+//    return negate ? -x : x;
   }
 
   int unpackS8() {

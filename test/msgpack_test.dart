@@ -37,6 +37,8 @@ void main() {
   test("Pack 5-character string", packString5);
   test("Pack 22-character string", packString22);
   test("Pack 256-character string", packString256);
+  test("Pack negative number -24577", packNegative1);
+  test("Pack negative number -245778641", packNegative2);
   test("Pack string array", packStringArray);
   test("Pack int-to-string map", packIntToStringMap);
   test("Pack 3-field message", packMessage);
@@ -56,6 +58,20 @@ void main() {
 void packString5() {
   List<int> encoded = pack("hello");
   expect(encoded, orderedEquals([165, 104, 101, 108, 108, 111]));
+}
+
+void packNegative1() {
+  List<int> encoded = pack(-24577);
+  expect(encoded, orderedEquals([0xd1,0x9f,0xff]));
+  Object decoded = unpack(encoded);
+  expect(decoded, -24577);
+}
+
+void packNegative2() {
+  List<int> encoded = pack(-245778641);
+  expect(encoded, orderedEquals([0xd2,0xf1,0x59,0xb7,0x2f]));
+  Object decoded = unpack(encoded);
+  expect(decoded, -245778641);
 }
 
 void packString22() {
