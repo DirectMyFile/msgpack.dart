@@ -37,6 +37,7 @@ void main() {
   test("Pack 5-character string", packString5);
   test("Pack 22-character string", packString22);
   test("Pack 256-character string", packString256);
+  test("Pack .NET SDK Test", packDSA);
   test("Pack negative number -24577", packNegative1);
   test("Pack negative number -245778641", packNegative2);
   test("Pack string array", packStringArray);
@@ -58,6 +59,13 @@ void main() {
 void packString5() {
   List<int> encoded = pack("hello");
   expect(encoded, orderedEquals([165, 104, 101, 108, 108, 111]));
+}
+
+void packDSA() {
+  // Use http://kawanet.github.io/msgpack-lite/ to test decode
+  // 81 A3 6D 73 67 D1 00 EB
+  List<int> testObjData = [0x81, 0xA3, 0x6D, 0x73, 0x67, 0xD1, 0x00, 0xEB];
+  expect(unpack(testObjData)["msg"], 235);
 }
 
 void packNegative1() {
