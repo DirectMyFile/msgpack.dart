@@ -42,8 +42,8 @@ void main() {
   test("Pack negative number -245778641", packNegative2);
   test("Pack string array", packStringArray);
   test("Pack int-to-string map", packIntToStringMap);
-  test("Pack 3-field message", packMessage);
-  test("Pack nested message", packNestedMessage);
+  //test("Pack 3-field message", packMessage);
+  //test("Pack nested message", packNestedMessage);
 
   test("Unpack 5-character string", unpackString5);
   test("Unpack 22-character string", unpackString22);
@@ -65,6 +65,7 @@ void packDSA() {
   // Use http://kawanet.github.io/msgpack-lite/ to test decode
   // 81 A3 6D 73 67 D1 00 EB
   List<int> testObjData = [0x81, 0xA3, 0x6D, 0x73, 0x67, 0xD1, 0x00, 0xEB];
+  Object obj=unpack(testObjData);
   expect(unpack(testObjData)["msg"], 235);
 }
 

@@ -284,28 +284,11 @@ class Unpacker {
   }
 
   int unpackS16() {
-    var bytes = [
-      unpackU8(),
-      unpackU8()
-    ];
-    return bytes[0] * 256 + bytes[1] - 0x10000;
-//    var negate = (bytes[0] & 0x80) != 0;
-//    var x = 0;
-//    var o = 0;
-//    var carry = 1;
-//    for (var i = 1, m = 1; i >= 0; i--, m *= 256) {
-//      var v = bytes[o + i];
-//
-//      if (negate) {
-//        v = (v ^ 0xff) + carry;
-//        carry = v >> 8;
-//        v &= 0xff;
-//      }
-//
-//      x += v * m;
-//    }
-//
-//    return negate ? -x : x;
+    int num = unpackU8() * 256 + unpackU8();
+    if (num > 0x7FFF)
+      return num - 0x10000;
+
+    return num;
   }
 
   int unpackS8() {
