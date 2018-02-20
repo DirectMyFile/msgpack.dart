@@ -158,7 +158,7 @@ class MsgPackBuffer implements PackBuffer {
 
   Uint8List read() {
     if (_totalLength <= bufferSize) {
-      return _buffer;
+      return _buffer.buffer.asUint8List(0, _totalLength);
     }
     
     var out = new Uint8List(_totalLength);
