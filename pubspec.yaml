@@ -1,9 +1,9 @@
 name: msgpack
 description: MsgPack for Dart
-version: 0.8.0
+version: 0.9.0
 authors:
 - Kenneth Endfinger <kaendfinger@gmail.com>
 - Dan Ellis <dan@danellis.me>
 homepage: https://github.com/DirectMyFile/msgpack.dart
 dev_dependencies:
-  test: ">=0.12.13"
+  test: "^0.12.0"
