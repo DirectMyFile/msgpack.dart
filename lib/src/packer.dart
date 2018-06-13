@@ -30,17 +30,31 @@ class BinaryHelper {
     if (input is ByteData) {
       return input;
     } else if (input is TypedData) {
-      return input.buffer.asByteData();
+      return input.buffer.asByteData(
+        input.offsetInBytes,
+        input.lengthInBytes
+      );
     } else if (input is ByteBuffer) {
       return input.asByteData();
     } else if (input is List<int>) {
-      return new Uint8List.fromList(input).buffer.asByteData();
+      var bytes = new Uint8List.fromList(input);
+      return bytes.buffer.asByteData(
+        bytes.offsetInBytes,
+        bytes.lengthInBytes
+      );
     } else if (input is String) {
       var encoded = _toUTF8(input);
       if (encoded is Uint8List) {
-        return encoded.buffer.asByteData();
+        return encoded.buffer.asByteData(
+          encoded.offsetInBytes,
+          encoded.lengthInBytes
+        );
       } else {
-        return new Uint8List.fromList(encoded).buffer.asByteData();
+        var bytes = new Uint8List.fromList(encoded);
+        return bytes.buffer.asByteData(
+          bytes.offsetInBytes,
+          bytes.lengthInBytes
+        );
       }
     } else if (input == null) {
       return null;
@@ -62,14 +76,18 @@ abstract class PackBuffer {
 class MsgPackBuffer implements PackBuffer {
   static const int defaultBufferSize = const int.fromEnvironment(
     "msgpack.packer.defaultBufferSize",
-    defaultValue: 512
+    defaultValue: 2048
   );
 
   List<Uint8List> _buffers = <Uint8List>[];
+
   Uint8List _buffer;
   int _len = 0;
   int _offset = 0;
   int _totalLength = 0;
+
+  int _bufferId = 0;
+  int _bufferCount = 0;
 
   final int bufferSize;
 
@@ -79,20 +97,24 @@ class MsgPackBuffer implements PackBuffer {
     if (_buffer == null) {
       _buffer = new Uint8List(bufferSize);
     }
-  }
-
-  @override
-  void writeUint8(int byte) {
-    if (_buffer == null) {
-      _buffer = new Uint8List(bufferSize);
-    }
 
     if (_buffer.lengthInBytes == _len) {
-      _buffers.add(_buffer);
+      if (_bufferId == _bufferCount) {
+        _buffers.add(_buffer);
+        _bufferCount++;
+      } else {
+        _buffers[_bufferId] = _buffer;
+      }
+      _bufferId++;
       _buffer = new Uint8List(bufferSize);
       _len = 0;
       _offset = 0;
     }
+  }
+
+  @override
+  void writeUint8(int byte) {
+    _checkBuffer();
 
     _buffer[_offset] = byte;
     _offset++;
@@ -135,37 +157,51 @@ class MsgPackBuffer implements PackBuffer {
   }
 
   Uint8List read() {
+    if (_totalLength <= bufferSize) {
+      return _buffer.buffer.asUint8List(0, _totalLength);
+    }
+    
     var out = new Uint8List(_totalLength);
     var off = 0;
 
-    var bufferCount = _buffers.length;
-    for (var i = 0; i < bufferCount; i++) {
+    for (var i = 0; i < _bufferCount; i++) {
       Uint8List buff = _buffers[i];
 
       for (var x = buff.offsetInBytes; x < buff.lengthInBytes; x++) {
-        out[off] = buff[x];
-        off++;
+        out[off++] = buff[x];
       }
     }
 
     if (_buffer != null) {
       for (var i = 0; i < _len; i++) {
-        out[off] = _buffer[i];
-        off++;
+        out[off++] = _buffer[i];
       }
     }
 
     return out;
   }
 
+  Uint8List reuse() {
+    return done(reuse: true);
+  }
+
   @override
-  Uint8List done() {
+  Uint8List done({bool reuse: false}) {
     Uint8List out = read();
-    _buffers = new List<Uint8List>();
+
+    if (!reuse) {
+      _buffers = new List<Uint8List>();
+      _bufferCount = 0;
+    }
+
+    _bufferId = 0;
     _len = 0;
     _totalLength = 0;
     _offset = 0;
-    _buffer = null;
+
+    if (!reuse) {
+      _buffer = null;
+    }
     return out;
   }
 
@@ -174,26 +210,40 @@ class MsgPackBuffer implements PackBuffer {
     _checkBuffer();
 
     var dataSize = data.lengthInBytes;
-
     var bufferSpace = _buffer.lengthInBytes - _len;
 
     if (bufferSpace < dataSize) {
-      int i;
-      for (i = 0; i < bufferSpace; i++) {
-        _buffer[_offset++] = data[i];
-      }
+      var end = _offset + bufferSpace;
+      _buffer.setRange(_offset, end, data);
 
       _len += bufferSpace;
       _totalLength += bufferSpace;
 
-      while(i < dataSize) {
-        writeUint8(data[i++]);
+      var index = bufferSpace;
+      var remain = dataSize - bufferSpace;
+
+      while (index < dataSize) {
+        _checkBuffer();
+
+        if (_len == 0) {
+          var ableToCopy = remain.clamp(0, bufferSize);
+          _buffer.setRange(0, ableToCopy, data, index);
+          _offset = ableToCopy;
+          _len = ableToCopy;
+          _totalLength += ableToCopy;
+          index += ableToCopy;
+          remain -= ableToCopy;
+        } else {
+          _buffer[_offset] = data[index++];
+          _offset++;
+          _len++;
+          _totalLength++;
+        }
       }
     } else {
-      for (var i = 0; i < dataSize; i++) {
-        _buffer[_offset++] = data[i];
-      }
+      _buffer.setRange(_offset, _offset + dataSize, data);
 
+      _offset += dataSize;
       _len += dataSize;
       _totalLength += dataSize;
     }
@@ -314,13 +364,11 @@ class StatefulPacker {
     buffer.writeUint8((high >> 16) & 0xff);
     buffer.writeUint8((high >>  8) & 0xff);
     buffer.writeUint8(high & 0xff);
-    buffer.writeUint8((low  >> 24) & 0xff);
-    buffer.writeUint8((low  >> 16) & 0xff);
-    buffer.writeUint8((low  >>  8) & 0xff);
+    buffer.writeUint8((low >> 24) & 0xff);
+    buffer.writeUint8((low >> 16) & 0xff);
+    buffer.writeUint8((low >>  8) & 0xff);
     buffer.writeUint8(low & 0xff);
   }
-
-  static const Utf8Encoder _utf8Encoder = const Utf8Encoder();
 
   void packString(String value) {
     List<int> utf8;
