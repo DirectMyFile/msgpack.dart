@@ -34,12 +34,12 @@ main(List<String> args) async {
       "hello": "world"
     });
 
-    var json = JSON.encode({
+    var jsonStr = json.encode({
       "hello": "world"
     });
 
     unpack(packed);
-    JSON.decode(json);
+    json.decode(jsonStr);
   }
 
   if (args.contains("--savings")) {
@@ -48,7 +48,7 @@ main(List<String> args) async {
       numbers.add(i);
     }
 
-    var jsonBytes = UTF8.encode(JSON.encode(numbers)).length;
+    var jsonBytes = utf8.encode(json.encode(numbers)).length;
     var msgpackBytes = pack(numbers).length;
     var fract = new Fraction(jsonBytes, msgpackBytes);
     fract = fract.reduce();
@@ -249,7 +249,7 @@ main(List<String> args) async {
 
 testObjectDecode(String desc, input) {
   print("${desc}:");
-  var packedJson = JSON.encode(input);
+  var packedJson = json.encode(input);
   var packed = pack(input);
   var watch = new Stopwatch();
   var times = [];
@@ -274,7 +274,7 @@ testObjectDecode(String desc, input) {
   for (var i = 1; i <= TIMES; i++) {
     watch.reset();
     watch.start();
-    JSON.decode(packedJson);
+    json.decode(packedJson);
     watch.stop();
     times.add(watch.elapsedMicroseconds);
   }
@@ -320,12 +320,12 @@ testObjectEncode(String desc, input) {
   print("    Shortest Time: ${times.first} microseconds (${times.first / 1000}ms)");
   print("    Size: ${size} bytes");
   watch.reset();
-  size = UTF8.encode(JSON.encode(input)).length;
+  size = utf8.encode(json.encode(input)).length;
   times.clear();
   for (var i = 1; i <= TIMES; i++) {
     watch.reset();
     watch.start();
-    JSON.encode(input);
+    json.encode(input);
     watch.stop();
     times.add(watch.elapsedMicroseconds);
   }
