@@ -10,7 +10,7 @@ var isList = predicate((e) => e is List, 'is a List');
 class TestMessage extends Message {
   int a;
   String b;
-  Map<int, String> c;
+  Map c;
 
   TestMessage(this.a, this.b, this.c);
 
@@ -22,7 +22,7 @@ class TestMessage extends Message {
 class OuterMessage extends Message {
   String a;
   bool b;
-  List<int> list;
+  List list;
   TestMessage inner;
 
   OuterMessage(this.a, this.b, this.list, this.inner);
