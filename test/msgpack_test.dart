@@ -1,6 +1,7 @@
 import 'dart:typed_data';
-import 'package:test/test.dart';
+
 import 'package:msgpack/msgpack.dart';
+import 'package:test/test.dart';
 
 var isString = predicate((e) => e is String, 'is a String');
 var isInt = predicate((e) => e is int, 'is an int');
@@ -14,7 +15,7 @@ class TestMessage extends Message {
 
   TestMessage(this.a, this.b, this.c);
 
-  static TestMessage fromList(List f) => new TestMessage(f[0], f[1], f[2]);
+  static TestMessage fromList(List f) => new TestMessage(f[0], f[1], Map.castFrom(f[2]));
 
   List toList() => [a, b, c];
 }
@@ -27,8 +28,7 @@ class OuterMessage extends Message {
 
   OuterMessage(this.a, this.b, this.list, this.inner);
 
-  static OuterMessage fromList(List f) =>
-    new OuterMessage(f[0], f[1], f[2], TestMessage.fromList(f[3]));
+  static OuterMessage fromList(List f) => new OuterMessage(f[0], f[1], List.castFrom(f[2]), TestMessage.fromList(f[3]));
 
   List toList() => [a, b, list, inner];
 }
@@ -65,56 +65,58 @@ void packDSA() {
   // Use http://kawanet.github.io/msgpack-lite/ to test decode
   // 81 A3 6D 73 67 D1 00 EB
   List<int> testObjData = [0x81, 0xA3, 0x6D, 0x73, 0x67, 0xD1, 0x00, 0xEB];
-  Object obj=unpack(testObjData);
+  Object obj = unpack(testObjData);
   expect(unpack(testObjData)["msg"], 235);
 }
 
 void packNegative1() {
   List<int> encoded = pack(-24577);
-  expect(encoded, orderedEquals([0xd1,0x9f,0xff]));
+  expect(encoded, orderedEquals([0xd1, 0x9f, 0xff]));
   Object decoded = unpack(encoded);
   expect(decoded, -24577);
 }
 
 void packNegative2() {
   List<int> encoded = pack(-245778641);
-  expect(encoded, orderedEquals([0xd2,0xf1,0x59,0xb7,0x2f]));
+  expect(encoded, orderedEquals([0xd2, 0xf1, 0x59, 0xb7, 0x2f]));
   Object decoded = unpack(encoded);
   expect(decoded, -245778641);
 }
 
 void packString22() {
   List<int> encoded = pack("hello there, everyone!");
-  expect(encoded, orderedEquals([
-    182,
-    104,
-    101,
-    108,
-    108,
-    111,
-    32,
-    116,
-    104,
-    101,
-    114,
-    101,
-    44,
-    32,
-    101,
-    118,
-    101,
-    114,
-    121,
-    111,
-    110,
-    101,
-    33
-  ]));
+  expect(
+      encoded,
+      orderedEquals([
+        182,
+        104,
+        101,
+        108,
+        108,
+        111,
+        32,
+        116,
+        104,
+        101,
+        114,
+        101,
+        44,
+        32,
+        101,
+        118,
+        101,
+        114,
+        121,
+        111,
+        110,
+        101,
+        33
+      ]));
 }
 
 void packString256() {
   List<int> encoded = pack(
-    "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
+      "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
   expect(encoded, hasLength(259));
   expect(encoded.sublist(0, 3), orderedEquals([218, 1, 0]));
   expect(encoded.sublist(3, 259), everyElement(65));
@@ -122,54 +124,52 @@ void packString256() {
 
 void packStringArray() {
   List<int> encoded = pack(["one", "two", "three"]);
-  expect(encoded, orderedEquals(
-    [147, 163, 111, 110, 101, 163, 116, 119, 111, 165, 116, 104, 114, 101, 101
-    ]));
+  expect(encoded, orderedEquals([147, 163, 111, 110, 101, 163, 116, 119, 111, 165, 116, 104, 114, 101, 101]));
 }
 
 void packIntToStringMap() {
   List<int> encoded = pack({1: "one", 2: "two"});
-  expect(encoded,
-    orderedEquals([130, 1, 163, 111, 110, 101, 2, 163, 116, 119, 111]));
+  expect(encoded, orderedEquals([130, 1, 163, 111, 110, 101, 2, 163, 116, 119, 111]));
 }
 
 void packMessage() {
   Message message = new TestMessage(1, "one", {2: "two"});
   List<int> encoded = pack(message);
-  expect(encoded,
-    orderedEquals([147, 1, 163, 111, 110, 101, 129, 2, 163, 116, 119, 111]));
+  expect(encoded, orderedEquals([147, 1, 163, 111, 110, 101, 129, 2, 163, 116, 119, 111]));
 }
 
 void packNestedMessage() {
   Message inner = new TestMessage(1, "one", {2: "two"});
   Message outer = new OuterMessage("three", true, [4, 5, 6], inner);
   List<int> encoded = pack(outer);
-  expect(encoded, orderedEquals([
-    148,
-    165,
-    116,
-    104,
-    114,
-    101,
-    101,
-    195,
-    147,
-    4,
-    5,
-    6,
-    147,
-    1,
-    163,
-    111,
-    110,
-    101,
-    129,
-    2,
-    163,
-    116,
-    119,
-    111
-  ]));
+  expect(
+      encoded,
+      orderedEquals([
+        148,
+        165,
+        116,
+        104,
+        114,
+        101,
+        101,
+        195,
+        147,
+        4,
+        5,
+        6,
+        147,
+        1,
+        163,
+        111,
+        110,
+        101,
+        129,
+        2,
+        163,
+        116,
+        119,
+        111
+      ]));
 }
 
 // Test unpacking
@@ -183,31 +183,8 @@ void unpackString5() {
 }
 
 void unpackString22() {
-  Uint8List data = new Uint8List.fromList([
-    182,
-    104,
-    101,
-    108,
-    108,
-    111,
-    32,
-    116,
-    104,
-    101,
-    114,
-    101,
-    44,
-    32,
-    101,
-    118,
-    101,
-    114,
-    121,
-    111,
-    110,
-    101,
-    33
-  ]);
+  Uint8List data = new Uint8List.fromList(
+      [182, 104, 101, 108, 108, 111, 32, 116, 104, 101, 114, 101, 44, 32, 101, 118, 101, 114, 121, 111, 110, 101, 33]);
   Unpacker unpacker = new Unpacker(data.buffer);
   var value = unpacker.unpack();
   expect(value, isString);
@@ -215,19 +192,18 @@ void unpackString22() {
 }
 
 void unpackString256() {
-  Uint8List data = new Uint8List.fromList(
-    [218, 1, 0]..addAll(new List.filled(256, 65)));
+  Uint8List data = new Uint8List.fromList([218, 1, 0]..addAll(new List.filled(256, 65)));
   Unpacker unpacker = new Unpacker(data.buffer);
   var value = unpacker.unpack();
   expect(value, isString);
-  expect(value, equals(
-    "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"));
+  expect(
+      value,
+      equals(
+          "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"));
 }
 
 void unpackStringArray() {
-  Uint8List data = new Uint8List.fromList(
-    [147, 163, 111, 110, 101, 163, 116, 119, 111, 165, 116, 104, 114, 101, 101
-    ]);
+  Uint8List data = new Uint8List.fromList([147, 163, 111, 110, 101, 163, 116, 119, 111, 165, 116, 104, 114, 101, 101]);
   Unpacker unpacker = new Unpacker(data.buffer);
   var value = unpacker.unpack();
   expect(value, isList);
@@ -235,8 +211,7 @@ void unpackStringArray() {
 }
 
 void unpackIntToStringMap() {
-  Uint8List data = new Uint8List.fromList(
-    [130, 1, 163, 111, 110, 101, 2, 163, 116, 119, 111]);
+  Uint8List data = new Uint8List.fromList([130, 1, 163, 111, 110, 101, 2, 163, 116, 119, 111]);
   Unpacker unpacker = new Unpacker(data.buffer);
   var value = unpacker.unpack();
   expect(value, isMap);
@@ -245,8 +220,7 @@ void unpackIntToStringMap() {
 }
 
 void unpackMessage() {
-  Uint8List data = new Uint8List.fromList(
-    [147, 1, 163, 111, 110, 101, 129, 2, 163, 116, 119, 111]);
+  Uint8List data = new Uint8List.fromList([147, 1, 163, 111, 110, 101, 129, 2, 163, 116, 119, 111]);
   Unpacker unpacker = new Unpacker(data.buffer);
   var value = unpacker.unpackMessage(TestMessage.fromList);
   expect(value, predicate((x) => x is TestMessage));
@@ -256,32 +230,8 @@ void unpackMessage() {
 }
 
 void unpackNestedMessage() {
-  Uint8List data = new Uint8List.fromList([
-    148,
-    165,
-    116,
-    104,
-    114,
-    101,
-    101,
-    195,
-    147,
-    4,
-    5,
-    6,
-    147,
-    1,
-    163,
-    111,
-    110,
-    101,
-    129,
-    2,
-    163,
-    116,
-    119,
-    111
-  ]);
+  Uint8List data = new Uint8List.fromList(
+      [148, 165, 116, 104, 114, 101, 101, 195, 147, 4, 5, 6, 147, 1, 163, 111, 110, 101, 129, 2, 163, 116, 119, 111]);
   Unpacker unpacker = new Unpacker(data.buffer);
   var value = unpacker.unpackMessage(OuterMessage.fromList);
   expect(value, predicate((x) => x is OuterMessage));
