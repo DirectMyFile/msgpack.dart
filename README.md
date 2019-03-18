@@ -1,5 +1,7 @@
 # MsgPack for Dart
 
+*Notice: This library has not been updated to Dart 2. Please see https://pub.dartlang.org/packages/msgpack_dart*
+
 A full-featured MsgPack library for Dart.
 
 ## Simple Example
